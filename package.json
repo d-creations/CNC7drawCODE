@@ -1,0 +1,15 @@
+{
+  "name": "cnc7drawcode",
+  "version": "1.0.0",
+  "description": "Sketch CNC Code",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron   .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Damian",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "electron": "^31.3.1"
+  }
+}
