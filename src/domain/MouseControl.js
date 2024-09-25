@@ -13,19 +13,46 @@ export class MouseControl{
     buttonState 
     drawBoard
     downPosition
+    mousePressed
     constructor(parentDiv,drawBoard){
         this.buttonState = MouseState.NONE
         this.getMenu(parentDiv)
         this.drawBoard= drawBoard
+        this.mousePressed = false
+
     }
 
     mouseDown(position){
-        this.downPosition = position
+        this.downPosition = {
+            exist : false,
+            dist : 9999,
+            obj : null,
+            x : 9999,
+            y : 9999
+        }
+        this.downPosition = this.drawBoard.selectStartObject(position.x,position.y)
         console.log("mouse mouse down")
         console.log(position)
+        this.mousePressed = true
     }
 
     mouseMove(position){
+
+        if(this.mousePressed){
+            console.log("mouse pressed")
+            console.log(position)            
+            if(this.buttonState == MouseState.LINE){
+                this.drawBoard.drawTempLine(this.downPosition,this.drawBoard.selectStartObject(position.x,position.y))
+            }
+        }else{
+            if(this.buttonState == MouseState.SELECT){
+                this.drawBoard.selectObject(position.x,position.y)
+            }
+            if(this.buttonState == MouseState.LINE){   
+                this.drawBoard.selectObject(position.x,position.y)
+            }
+
+        }
 
        // console.log("mouse moved")
        // console.log(position)
@@ -53,31 +80,14 @@ export class MouseControl{
             this.drawBoard.selectObject(position.x,position.y)
         }
 
-        if(this.buttonState == MouseState.LINE){
-
- 
-            /*
-            const points = [];
-            points.push(new THREE.Vector3(1,1,0));
-            points.push(new THREE.Vector3(10,10,0));
-                
-            const material = new THREE.MeshBasicMaterial( { color: 0xcc00cc } ); 
-            let geo = new THREE.BufferGeometry().setFromPoints(points);
-            let newLengthPlot = new THREE.Line(geo, material);
-    
-            this.drawObject.push(newLengthPlot)
-            */
-            
-        }
     }
 
     mouseUp(position) {
         console.log("mouse UP")
         console.log(position)
-        
+        this.mousePressed = false
         if(this.buttonState == MouseState.LINE){
-            this.drawBoard.drawLine(this.downPosition.x,this.downPosition.y,position.x,position.y)
-
+            this.drawBoard.drawLine(this.downPosition,this.drawBoard.selectStartObject(position.x,position.y))
         }
     }
 
