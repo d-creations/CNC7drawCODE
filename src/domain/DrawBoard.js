@@ -1,3 +1,4 @@
+import { Vec4 } from "./Camera.js"
 
 
 
@@ -17,24 +18,29 @@ export class DrawLine{
     startPoint
     endpoint
     color
+    camera
 
-    constructor(ctx,startPoint,endpoint){
+    constructor(ctx,camera,startPoint,endpoint){
         this.ctx = ctx
         this.startPoint = startPoint
         this.endpoint = endpoint
-        this.color = "red"        
+        this.color = "red"   
+        this.camera = camera     
     }
 
     changeColor(color){
         this.color = color
     }
     draw(){
+        
+            let startPointcameraVec4 = this.startPoint.vec4.mulMatrix(this.camera.getCalcMatrix())
+            let endPointcameraVec4 = this.endpoint.vec4.mulMatrix(this.camera.getCalcMatrix())
            // Define a new path
            this.ctx.beginPath();
            // Set a start-point
-           this.ctx.moveTo(this.startPoint.x,this.startPoint.y);
+           this.ctx.moveTo(startPointcameraVec4.x,startPointcameraVec4.y);
            // Set an end-point
-           this.ctx.lineTo(this.endpoint.x, this.endpoint.y);
+           this.ctx.lineTo(endPointcameraVec4.x, endPointcameraVec4.y);
            // Stroke it (Do the Drawing)
            this.ctx.strokeStyle = this.color
            this.ctx.stroke();    
@@ -61,14 +67,14 @@ export class DrawLine{
 export class Point{
 
     ctx
-    x
-    y
+    vec4
     color
-    constructor(ctx,x,y){
+    camera
+    constructor(ctx,camera,vec4){
         this.ctx = ctx
-        this.x = x 
-        this.y = y
+        this.vec4 = vec4 
         this.color = "red"
+        this.camera = camera
     }
 
     changeColor(color){
@@ -77,8 +83,9 @@ export class Point{
 
 
     draw(){
+        let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix())
         this.ctx.beginPath();
-        this.ctx.arc(this.x, this.y, 5, 0, 2 * Math.PI);
+        this.ctx.arc(cameraVec4.x,cameraVec4.y, 5, 0, 2 * Math.PI);
         this.ctx.fillStyle = this.color;
         this.ctx.linfilleWidth = 4;
         this.ctx.strokeStyle = this.color;
@@ -100,8 +107,10 @@ export class DrawBoard{
     drawTempObjects    
     selectDistLampda
     hoverObj
+    camera
 
-    constructor(canvas){
+    constructor(canvas,camera){
+        this.camera = camera
         this.context = canvas.getContext("2d")
         this.canvas = canvas
         this.drawObjects = []
@@ -113,10 +122,21 @@ export class DrawBoard{
     }
 
     drawPoint(x,y){
-        this.drawObjects.push(new Point(this.context,x,y))
+        this.drawObjects.push(new Point(this.context,this.camera,new Vec4(x,y,0,1)))
         this.draw()
 
     }
+
+    moveX(delta){
+        this.camera.moveX(delta)
+        this.draw()
+    }
+
+    moveY(delta){
+        this.camera.moveY(delta)
+        this.draw()
+    }
+
 
     selectStartObject(_x,_y){
         let selectedobj = {
@@ -176,30 +196,30 @@ export class DrawBoard{
         }
         this.clearTempObjects()
         if(!startObject.exist){
-            startObject.obj = new Point(this.context,startObject.x,startObject.y)
+            startObject.obj = new Point(this.context,this.camera,new Vec4(startObject.x,startObject.y,0,1))
             this.drawObjects.push(startObject.obj)
         }
         if(!endObject.exist){
-            endObject.obj = new Point(this.context,endObject.x,endObject.y)
+            endObject.obj = new Point(this.context,this.camera,new Vec4(endObject.x,endObject.y,0,1))
             this.drawObjects.push(endObject.obj)
 
         }
-        this.drawObjects.push(new DrawLine(this.context,startObject.obj,endObject.obj))
+        this.drawObjects.push(new DrawLine(this.context,this.camera,startObject.obj,endObject.obj))
         this.draw()
     }
 
     drawTempLine(startObject,endObject){
         this.clearTempObjects()
         if(!startObject.exist){
-            startObject.obj = new Point(this.context,startObject.x,startObject.y)
+            startObject.obj = new Point(this.context,this.camera,new Vec4(startObject.x,startObject.y,0,1))
             this.drawTempObjects.push(startObject.obj)
         }
         if(!endObject.exist){
-            endObject.obj = new Point(this.context,endObject.x,endObject.y)
+            endObject.obj = new Point(this.context,this.camera,new Vec4(endObject.x,endObject.y,0,1))
             this.drawTempObjects.push(endObject.obj)
 
         }
-        this.drawTempObjects.push(new DrawLine(this.context,startObject.obj,endObject.obj))
+        this.drawTempObjects.push(new DrawLine(this.context,this.camera,startObject.obj,endObject.obj))
         this.draw()        
     }
 
@@ -226,9 +246,14 @@ export class DrawBoard{
         }
 
         // Define a new path X
+        let xStart = new Vec4(50,50,0,1)
+        let xEnd = new Vec4(100,50,0,1)
+        let camxStart = xStart.mulMatrix(this.camera.getCalcMatrix())
+        let camxEnd = xEnd.mulMatrix(this.camera.getCalcMatrix())
+
         this.context.beginPath();
-        this.context.moveTo(50,50);
-                   this.context.lineTo(100, 50);
+        this.context.moveTo(camxStart.x,camxStart.y);
+                   this.context.lineTo(camxEnd.x, camxEnd.y);
                    this.context.strokeStyle = "black"
                    this.context.stroke();    
 

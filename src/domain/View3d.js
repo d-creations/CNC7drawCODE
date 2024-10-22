@@ -38,18 +38,9 @@ SOFTWARE.
 
 
 
-import * as THREE from "./../technical/build/three.module.js";
-
-
-import {OrbitControls} from '../technical/build/OrbitControls.js';
-
-import {TransformControls} from '../technical/build/TransformControls.js';
-
-import {TrackballControls} from '../technical/build/TrackballControl.js';
-
-import Stats from '../technical/build/stats.module.js';
 import { MouseControl } from "./MouseControl.js";
 import { DrawBoard } from "./DrawBoard.js";
+import { Camera } from "./Camera.js";
 
 
 
@@ -79,8 +70,9 @@ export class View3D{
     constructor(parentDiv) {
         var DView = parentDiv.appendChild(document.createElement("div"));
         DView.id = "DView_Menu";
-        var container = parentDiv.appendChild(document.createElement("canvas"))
-        this.drawBoard = new DrawBoard(container)
+        let camera = new Camera()
+        let container = parentDiv.appendChild(document.createElement("canvas"))
+        this.drawBoard = new DrawBoard(container,camera)
         this.mousecontrol = new MouseControl(DView,this.drawBoard)
         container.classList.add("container")
         container.id ='container';

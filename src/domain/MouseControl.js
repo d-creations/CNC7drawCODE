@@ -4,7 +4,7 @@ import { DrawBoard } from "./DrawBoard.js";
 
 
 
-export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
+export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5 };
 
 
 
@@ -14,6 +14,7 @@ export class MouseControl{
     drawBoard
     downPosition
     mousePressed
+    movePos
     constructor(parentDiv,drawBoard){
         this.buttonState = MouseState.NONE
         this.getMenu(parentDiv)
@@ -30,6 +31,14 @@ export class MouseControl{
             x : 9999,
             y : 9999
         }
+        
+        this.movePos = {
+            exist : false,
+            dist : 9999,
+            obj : null,
+            x : position.x,
+            y : position.y
+        }
         this.downPosition = this.drawBoard.selectStartObject(position.x,position.y)
         console.log("mouse mouse down")
         console.log(position)
@@ -44,6 +53,15 @@ export class MouseControl{
             if(this.buttonState == MouseState.LINE){
                 this.drawBoard.drawTempLine(this.downPosition,this.drawBoard.selectStartObject(position.x,position.y))
             }
+          
+            else if(this.buttonState == MouseState.MOVE){
+                let deltaX = this.movePos.x - position.x
+                let deltaY = this.movePos.y - position.y
+                this.drawBoard.moveX(-deltaX)
+                this.drawBoard.moveY(-deltaY)
+                this.movePos = position
+            }
+
         }else{
             if(this.buttonState == MouseState.SELECT){
                 this.drawBoard.selectObject(position.x,position.y)
@@ -112,6 +130,12 @@ export class MouseControl{
         let buttonSelect = document.createElement("Button")
         buttonSelect.innerText = "Select"
         buttonSelect.addEventListener( 'click',()=>{that.buttonState = MouseState.SELECT}  );
+
+        let buttonMove = document.createElement("Button")
+        buttonMove.innerText = "Move"
+        buttonMove.addEventListener( 'click',()=>{that.buttonState = MouseState.MOVE}  );
+        menudiv.appendChild( buttonMove );
+
         menudiv.appendChild( buttonClear );
         menudiv.appendChild( buttonPoint );
         menudiv.appendChild( buttonLine );
