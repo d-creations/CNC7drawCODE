@@ -42,6 +42,7 @@ import { MouseControl } from "./MouseControl.js";
 import { DrawBoard } from "./DrawBoard.js";
 import { Camera } from "./Camera.js";
 import { PropertyEditor } from "./PropertyEditor.js";
+import { CommandPanel } from "./CommandPanel.js";
 
 
 
@@ -82,6 +83,7 @@ export class View3D{
         
         this.drawBoard = new DrawBoard(container,camera)
         this.mousecontrol = new MouseControl(DView,this.drawBoard)
+        this.commandPanel = new CommandPanel(parentDiv, this.mousecontrol);
 
         let barDiv = document.getElementById("bar");
         this.propertyEditor = new PropertyEditor(parentDiv, this.drawBoard);

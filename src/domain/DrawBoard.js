@@ -2,110 +2,12 @@ import { Vec4 } from "./Camera.js"
 import { stickFont } from "./LetterDrawer.js"
 import { AppConfig } from "./Config.js"
 
-
-
-
 let selectedobj = {
     exist : false,
     dist : 9999,
     obj : null,
     x : 9999,
     y : 9999
-}
-
-
-export class DrawLine{
-
-    ctx
-    startPoint
-    endpoint
-    color
-    camera
-
-    constructor(ctx,camera,startPoint,endpoint){
-        this.ctx = ctx
-        this.startPoint = startPoint
-        this.endpoint = endpoint
-        this.color = "red"   
-        this.camera = camera     
-    }
-
-    changeColor(color){
-        this.color = color
-    }
-    draw(){
-        
-            let startPointcameraVec4 = this.startPoint.vec4.mulMatrix(this.camera.getCalcMatrix())
-            let endPointcameraVec4 = this.endpoint.vec4.mulMatrix(this.camera.getCalcMatrix())
-           // Define a new path
-           this.ctx.beginPath();
-           // Set a start-point
-           this.ctx.moveTo(startPointcameraVec4.x,startPointcameraVec4.y);
-           // Set an end-point
-           this.ctx.lineTo(endPointcameraVec4.x, endPointcameraVec4.y);
-           // Stroke it (Do the Drawing)
-           this.ctx.strokeStyle = this.color
-           this.ctx.stroke();    
-        }
-        check(x,y){
-        let startCam = this.startPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let endCam = this.endpoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        
-        let xV_ = endCam.x - startCam.x;
-        let yV_ = endCam.y - startCam.y;
-        let x2 = x - startCam.x;
-        let y2 = y - startCam.y;
-        
-        // console.log("Skalarprodukt")
-        let SkalarPS = (xV_*x2 + yV_*y2)/(Math.sqrt(xV_*xV_+yV_*yV_) * Math.sqrt(x2*x2+y2*y2)) || 0;
-        let distanceP = (xV_*y2 - yV_*x2)/Math.sqrt(xV_*xV_+yV_*yV_) || 0; 
-        
-        x2 = x - endCam.x;
-        y2 = y - endCam.y; 
-        let SkalarPE = (-xV_*x2 - yV_*y2)/(Math.sqrt(xV_*xV_+yV_*yV_) * Math.sqrt(x2*x2+y2*y2)) || 0;
-        
-        if(SkalarPE < 0 || SkalarPS < 0){
-            distanceP = 99999;
-        }
-        return Math.abs(distanceP);
-    }
-}
-
-export class Point{
-
-    ctx
-    vec4
-    color
-    camera
-    constructor(ctx,camera,vec4){
-        this.ctx = ctx
-        this.vec4 = vec4 
-        this.color = "red"
-        this.camera = camera
-    }
-
-    changeColor(color){
-        this.color = color
-    }
-
-
-    draw(){
-        let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix())
-        this.ctx.beginPath();
-        this.ctx.arc(cameraVec4.x,cameraVec4.y, 5, 0, 2 * Math.PI);
-        this.ctx.fillStyle = this.color;
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeStyle = this.color;
-        this.ctx.fill();
-        this.ctx.stroke();
-    }
-    check(x,y){
-        let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix())
-        let x_ = x - cameraVec4.x
-        let y_ = y - cameraVec4.y
-
-        return Math.sqrt(x_*x_ + y_*y_);
-    }
 }
 
 export class DrawBoard{
@@ -140,9 +42,7 @@ export class DrawBoard{
     }
 
     drawPoint(x,y){
-        this.drawObjects.push(new Point(this.context,this.camera,this.camera.getWorldVec(x, y)))
-        this.draw()
-
+        // Migrated to Point.create
     }
 
     moveX(delta){
@@ -162,7 +62,7 @@ export class DrawBoard{
         this.draw();
     }
 
-    selectStartObject(_x,_y){
+    selectStartObject(_x,_y, allowedTypes = ["Point"]){
         let selectedobj = {
             exist : false,
             dist : 9999,
@@ -170,15 +70,30 @@ export class DrawBoard{
             x : _x,
             y : _y
         }
-        for(let obj of this.drawObjects){
-            let dist = obj.check(_x,_y)
-            if(dist < this.selectDistLampda){
-                if(selectedobj.dist > dist){
-                    selectedobj.obj = obj
-                    let camPos = obj.vec4 ? obj.vec4.mulMatrix(this.camera.getCalcMatrix()) : {x:0, y:0};
-                    selectedobj.x = camPos.x
-                    selectedobj.y = camPos.y
-                    selectedobj.dist = dist
+        for(let mainObj of this.drawObjects){
+            let objectsToCheck = [mainObj];
+            if (typeof mainObj.getSubObjects === 'function') {
+                objectsToCheck = objectsToCheck.concat(mainObj.getSubObjects());
+            }
+
+            for(let obj of objectsToCheck){
+                if (!allowedTypes.includes(obj.constructor.name)) continue; // snap filter
+                let dist = obj.check(_x,_y)
+                if(dist < this.selectDistLampda){
+                    if(selectedobj.dist > dist){
+                        selectedobj.obj = obj
+                        // If it's a point, we snap exactly to its vec4, else just use the closest mouse point for lines
+                        if (obj.constructor.name === "Point") {
+                            let camPos = obj.vec4 ? obj.vec4.mulMatrix(this.camera.getCalcMatrix()) : {x:0, y:0};
+                            selectedobj.x = camPos.x
+                            selectedobj.y = camPos.y
+                        } else {
+                            selectedobj.x = _x;
+                            selectedobj.y = _y;
+                        }
+                        selectedobj.dist = dist
+                        selectedobj.exist = true;
+                    }
                 }
             }
         }
@@ -186,31 +101,43 @@ export class DrawBoard{
     }
     selectObject(x,y){
         
-        this.hoverObj = null
+        let previousHoverObj = this.hoverObj;
+        this.hoverObj = null;
         let selectedobj = {
             dist : 9999,
             obj : null
         }
-        for(let obj of this.drawObjects){
-            let dist = obj.check(x,y)
-            if(dist < this.selectDistLampda){
-                if(selectedobj.dist > dist){
-                    selectedobj.obj = obj
-                    selectedobj.exist = true
-                    selectedobj.dist = dist
+        for(let mainObj of this.drawObjects){
+            mainObj.changeColor("red") // Reset main object color
+            
+            let objectsToCheck = [mainObj];
+            if (typeof mainObj.getSubObjects === 'function') {
+                objectsToCheck = objectsToCheck.concat(mainObj.getSubObjects());
+            }
+
+            for(let obj of objectsToCheck){
+                if (obj !== mainObj && typeof obj.changeColor === 'function') {
+                    // Note: Sub-objects like Tangent points override their color in draw(), 
+                    // but we can reset them here just in case.
+                    obj.changeColor("blue");
+                }
+                let dist = obj.check(x,y)
+                if(dist < this.selectDistLampda){
+                    if(selectedobj.dist > dist){
+                        selectedobj.obj = obj
+                        selectedobj.exist = true
+                        selectedobj.dist = dist
+                    }
                 }
             }
-            // Normal color for all objects
-            obj.changeColor("red")
         }
         if(selectedobj.dist < this.selectDistLampda){
             // Color for the selected/hovered object
             selectedobj.obj.changeColor("green")
-            console.log("selected one")
-            this.hoverObj = selectedobj.obj
+            this.hoverObj = selectedobj.obj;
         }
         
-        if (this.onSelectionChanged) {
+        if (this.onSelectionChanged && previousHoverObj !== this.hoverObj) {
             this.onSelectionChanged(this.hoverObj);
         }
 
@@ -218,44 +145,14 @@ export class DrawBoard{
     }
 
     drawLine(startObject,endObject){
-        
-        let selectedobj = {
-            exist : false,
-            dist : 9999,
-            obj : null,
-            x : 9999,
-            y : 9999
-        }
-
-        this.clearTempObjects()
-        if(!startObject.exist){
-            startObject.obj = new Point(this.context,this.camera,this.camera.getWorldVec(startObject.x, startObject.y))
-            this.drawObjects.push(startObject.obj)
-        }
-        if(!endObject.exist){
-            endObject.obj = new Point(this.context,this.camera,this.camera.getWorldVec(endObject.x, endObject.y))
-            this.drawObjects.push(endObject.obj)
-
-        }
-        this.drawObjects.push(new DrawLine(this.context,this.camera,startObject.obj,endObject.obj))
-        this.draw()
+        // migrated
     }
 
     drawTempLine(startObject,endObject){
-
-        this.clearTempObjects()
-        if(!startObject.exist){
-            startObject.obj = new Point(this.context,this.camera,this.camera.getWorldVec(startObject.x, startObject.y))
-            this.drawTempObjects.push(startObject.obj)
-        }
-        if(!endObject.exist){
-            endObject.obj = new Point(this.context,this.camera,this.camera.getWorldVec(endObject.x, endObject.y))
-            this.drawTempObjects.push(endObject.obj)
-
-        }
-        this.drawTempObjects.push(new DrawLine(this.context,this.camera,startObject.obj,endObject.obj))
-        this.draw()        
+        // migrated      
     }
+
+    // Circle logic successfully migrated out to DrawCircle, DrawCircle3P, DrawCircle3T, DrawCircle2T1R.
 
     clearTempObjects(){
         this.drawTempObjects = []
@@ -281,12 +178,10 @@ export class DrawBoard{
 
 
     draw(){
-        this.hoverObj = null
         // Set background color
         this.context.fillStyle = "whitesmoke";
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        console.log("draw")
         for(let obj of this.drawObjects){
             obj.draw()
         }

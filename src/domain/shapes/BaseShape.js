@@ -1,0 +1,73 @@
+/**
+ * Abstract Base Class defining the required interface (Type) for any CNC DrawBoard Shape.
+ * Every custom graphical object (Line, Point, Arc, Spline) MUST inherit from this
+ * to guarantee it integrates perfectly with the DrawBoard, Select Tool, and Property Editor.
+ */
+export class BaseShape {
+    /**
+     * @param {CanvasRenderingContext2D} ctx The HTML5 Canvas Drawing Context
+     * @param {Camera} camera The global Camera handling world translations
+     */
+    constructor(ctx, camera) {
+        if (this.constructor === BaseShape) {
+            throw new Error("BaseShape is an abstract class and cannot be instantiated directly.");
+        }
+        this.ctx = ctx;
+        this.camera = camera;
+        this.color = "red"; // Default normal state color
+    }
+
+    /** 
+     * Renders the shape visually to the Canvas using the Camera's Matrix offset.
+     * MUST use `.mulMatrix(this.camera.getCalcMatrix())` to draw correctly in the view window.
+     * @abstract
+     */
+    draw() {
+        throw new Error("Method 'draw()' must be implemented by subclasses.");
+    }
+
+    /** 
+     * Hit-box selection logic.
+     * Calculates the mathematical distance from the screen X/Y coordinate to this shape.
+     * @param {number} x The canvas offsetX (mouse coordinate)
+     * @param {number} y The canvas offsetY (mouse coordinate)
+     * @returns {number} The absolute closest distance in calculated pixels. Returns < 9999 if found.
+     * @abstract
+     */
+    check(x, y) {
+        throw new Error("Method 'check(x, y)' must be implemented by subclasses.");
+    }
+
+    /** 
+     * Self-documents to the Property Editor UI what editable variables it has.
+     * @param {PropertyEditor} editor The UI Property Editor instance providing input generators.
+     * @abstract
+     */
+    buildProperties(editor) {
+        throw new Error("Method 'buildProperties(editor)' must be implemented by subclasses.");
+    }
+
+    /**
+     * Returns virtual or sub-geometry shapes managed by this parent shape.
+     * Overridden by complex shapes (e.g. circles with live tangent points).
+     * @returns {BaseShape[]} Array of sub-shapes.
+     */
+    getSubObjects() {
+        return [];
+    }
+
+    /** Standard inherited method allowing the Selection tool to flag objects Green */
+    changeColor(color) {
+        this.color = color;
+    }
+
+    /** Helper method down to resolve canvas snapping points or create raw ones */
+    static resolvePoint(drawBoard, ptParam, isTemp = false) {
+        if (ptParam.exist) return ptParam.obj;
+        
+        let vec = drawBoard.camera.getWorldVec(ptParam.x, ptParam.y);
+        // Using "Point" requires importing it in subclasses since BaseShape sits at top. 
+        // Subclasses will handle the actual Point instantiation if needed.
+        return null; 
+    }
+}

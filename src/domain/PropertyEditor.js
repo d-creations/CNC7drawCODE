@@ -29,6 +29,7 @@ export class PropertyEditor {
     }
     
     setObject(obj) {
+        if (this.selectedObject === obj) return;
         this.selectedObject = obj;
         this.render();
     }
@@ -46,11 +47,9 @@ export class PropertyEditor {
         title.style.marginTop = "0";
         this.container.appendChild(title);
         
-        if (this.selectedObject.constructor.name === "Point") {
-             this.buildPointFields(this.selectedObject, "Position");
-        } else if (this.selectedObject.constructor.name === "DrawLine") {
-             this.buildPointFields(this.selectedObject.startPoint, "Start Point");
-             this.buildPointFields(this.selectedObject.endpoint, "End Point");
+        // Polymorphic property building!
+        if (typeof this.selectedObject.buildProperties === "function") {
+            this.selectedObject.buildProperties(this);
         }
         
         // Allow color changing for testing standard properties
