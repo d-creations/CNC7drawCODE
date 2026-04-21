@@ -40,12 +40,18 @@ export class MouseControl{
             y : position.y
         }
         this.downPosition = this.drawBoard.selectStartObject(position.x,position.y)
+        if(this.buttonState == MouseState.SELECT){
+            this.drawBoard.selectObject(position.x,position.y)
+        }
         console.log("mouse mouse down")
         console.log(position)
         this.mousePressed = true
     }
 
     mouseMove(position){
+        
+        // Update the cursor position to display it in the top right
+        this.drawBoard.setCursorPos(position.x, position.y);
 
         if(this.mousePressed){
             console.log("mouse pressed")
@@ -61,17 +67,10 @@ export class MouseControl{
                 this.drawBoard.moveY(-deltaY)
                 this.movePos = position
             }
-
-        }else{
-            if(this.buttonState == MouseState.SELECT){
+            else if(this.buttonState == MouseState.SELECT){
                 this.drawBoard.selectObject(position.x,position.y)
             }
-            if(this.buttonState == MouseState.LINE){   
-                this.drawBoard.selectObject(position.x,position.y)
-            }
-
         }
-
        // console.log("mouse moved")
        // console.log(position)
     }
@@ -81,23 +80,12 @@ export class MouseControl{
         console.log(position)
         if(this.buttonState == MouseState.POINT){
 
-            this.drawBoard.drawPoint(position.x,position.y)
-            /*
-
-
-            const geometry = new THREE.CircleGeometry( 1, 10 ); 
-            geometry.translate(position.x,position.y,0)
-            const material = new THREE.MeshBasicMaterial( { color: 0xcc00cc } ); 
-            const circle = new THREE.Mesh( geometry, material ); 
-            this.drawObject.push(circle)*/
-            
+            this.drawBoard.drawPoint(position.x,position.y) 
         }
         
         if(this.buttonState == MouseState.SELECT){
-
             this.drawBoard.selectObject(position.x,position.y)
         }
-
     }
 
     mouseUp(position) {
@@ -134,7 +122,18 @@ export class MouseControl{
         let buttonMove = document.createElement("Button")
         buttonMove.innerText = "Move"
         buttonMove.addEventListener( 'click',()=>{that.buttonState = MouseState.MOVE}  );
+
+        let buttonZoomIn = document.createElement("Button")
+        buttonZoomIn.innerText = "+"
+        buttonZoomIn.addEventListener( 'click',()=>{this.drawBoard.zoom(1.2)}  );
+
+        let buttonZoomOut = document.createElement("Button")
+        buttonZoomOut.innerText = "-"
+        buttonZoomOut.addEventListener( 'click',()=>{this.drawBoard.zoom(1/1.2)}  );
+
         menudiv.appendChild( buttonMove );
+        menudiv.appendChild( buttonZoomIn );
+        menudiv.appendChild( buttonZoomOut );
 
         menudiv.appendChild( buttonClear );
         menudiv.appendChild( buttonPoint );

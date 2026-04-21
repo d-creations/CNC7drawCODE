@@ -1,6 +1,8 @@
 
 
 
+import { AppConfig } from "./Config.js"
+
 export class Vec4{
 
     constructor(x,y,z,d){
@@ -29,7 +31,15 @@ export class Camera{
     }
 
     getEinheitsMatrix(){
-        return [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]
+        // Using config to initialize scale mapping (pixels per unit)
+        // Default is 1 if unset. e.g. Scale 10 = 10 pixels per 1 CNC unit.
+        let scale = AppConfig.drawBoard.PixelsPerUnit || 1;
+        return [
+            [scale, 0, 0, 0],
+            [0, scale, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ]
     }
 
     getCalcMatrix(){
@@ -40,6 +50,25 @@ export class Camera{
         return vec4.mulMatrix(this.calcMatrix)
     }
 
+    /**
+     * Converts raw screen/canvas coordinates to World space vectors 
+     * by applying the inverse camera translation and scale.
+     */
+    getWorldVec(screenX, screenY){
+        // Scale Factor
+        let scale = this.calcMatrix[0][0]; 
+        
+        let worldX = (screenX - this.calcMatrix[0][3]) / scale;
+        let worldY = (screenY - this.calcMatrix[1][3]) / scale;
+
+        // Apply grid snap / minimum step resolution from config
+        let step = AppConfig.drawBoard.minStep;
+        worldX = Math.round(worldX / step) * step;
+        worldY = Math.round(worldY / step) * step;
+
+        return new Vec4(worldX, worldY, 0, 1);
+    }
+
     moveX(delta){
         this.calcMatrix[0][3] += delta
 
@@ -47,6 +76,20 @@ export class Camera{
 
     moveY(delta){
         this.calcMatrix[1][3] += delta
+    }
+
+    zoom(factor, cx, cy){
+        let scaleBefore = this.calcMatrix[0][0];
+        let worldX = (cx - this.calcMatrix[0][3]) / scaleBefore;
+        let worldY = (cy - this.calcMatrix[1][3]) / scaleBefore;
+
+        this.calcMatrix[0][0] *= factor;
+        this.calcMatrix[1][1] *= factor;
+        this.calcMatrix[2][2] *= factor;
+
+        let scaleAfter = this.calcMatrix[0][0];
+        this.calcMatrix[0][3] = cx - worldX * scaleAfter;
+        this.calcMatrix[1][3] = cy - worldY * scaleAfter;
     }
 
 }

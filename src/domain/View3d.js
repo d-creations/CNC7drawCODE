@@ -41,6 +41,7 @@ SOFTWARE.
 import { MouseControl } from "./MouseControl.js";
 import { DrawBoard } from "./DrawBoard.js";
 import { Camera } from "./Camera.js";
+import { PropertyEditor } from "./PropertyEditor.js";
 
 
 
@@ -54,38 +55,48 @@ export class View3D{
      drawBoard
 
      getPosition(e){
-
        let position = {};
-        this.container.innerHeight
-        this.container.innerWidth
-        position.x = ((e.clientX- this.container.offsetLeft )-(this.container.offsetWidth /2))   ;
-        position.y = -((e.clientY -this.container.offsetTop ) -(this.container.offsetHeight /2));
-
-        position.x =(e.clientX- this.container.offsetLeft )
-        position.y = (e.clientY -this.container.offsetTop ) 
-        //console.log(View3D.camera.mat
-
-        return position
+       position.x = e.offsetX;
+       position.y = e.offsetY;
+       return position;
      }
     constructor(parentDiv) {
-        var DView = parentDiv.appendChild(document.createElement("div"));
-        DView.id = "DView_Menu";
-        let camera = new Camera()
         let container = parentDiv.appendChild(document.createElement("canvas"))
-        this.drawBoard = new DrawBoard(container,camera)
-        this.mousecontrol = new MouseControl(DView,this.drawBoard)
         container.classList.add("container")
         container.id ='container';
-        container.height = 400
-        container.width = 400
+        container.height = 800
+        container.width = 800
+        container.style.height = "800px" // Ensure CSS size is constrained correctly
+        container.style.width = "800px"
+        container.style.backgroundColor = "whitesmoke"
+
+        var DView = parentDiv.appendChild(document.createElement("div"));
+        DView.id = "DView_Menu";
+
+        
+        let camera = new Camera()
+        // Center the 0,0 coordinate in the middle of the canvas
+        // The default View 0,0 is at top-left. Offsetting by half width/height makes 0,0 the center.
+        camera.moveX(container.width / 2)
+        camera.moveY(container.height / 2)
+        
+        this.drawBoard = new DrawBoard(container,camera)
+        this.mousecontrol = new MouseControl(DView,this.drawBoard)
+
+        let barDiv = document.getElementById("bar");
+        this.propertyEditor = new PropertyEditor(parentDiv, this.drawBoard);
+        this.drawBoard.onSelectionChanged = (obj) => {
+            this.propertyEditor.setObject(obj);
+        }
+
         let that = this
         this.container = container
         container.addEventListener( 'click',(e)=>{that.mousecontrol.mouseClicked(that.getPosition(e))}  );
         container.addEventListener( 'mousedown',(e)=>{that.mousecontrol.mouseDown(that.getPosition(e))}  );
         container.addEventListener( 'mouseup',(e)=>{that.mousecontrol.mouseUp(that.getPosition(e))}  );
         container.addEventListener( 'mousemove',(e)=>{that.mousecontrol.mouseMove(that.getPosition(e))}  );
-        container.innerHeight = 400;
-        container.innerWidth = 400;
+        container.innerHeight = 800;
+        container.innerWidth = 800;
 
     }
 
