@@ -59,23 +59,36 @@ export class CommandPanel {
             instruction.innerText = "Click and drag to define center and radius.";
         } else if (state === MouseState.CIRCLE_3P) {
             title.innerText = "Tool: 3-Point Circle";
-            let pts = this.mouseControl.tempPoints.length;
+            let pts = this.mouseControl.circle3PTool.selectedPoints.length;
             if (pts === 0) instruction.innerText = "Step 1/3: Select 1st point";
             else if (pts === 1) instruction.innerText = "Step 2/3: Select 2nd point";
             else if (pts === 2) instruction.innerText = "Step 3/3: Select 3rd point (final)";
+        } else if (state === MouseState.MEASURE_LENGTH) {
+            title.innerText = "Tool: Measure Length";
+            let step = this.mouseControl.lengthMeasurementTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
+            else instruction.innerText = "Step 2/2: Select end point";
+        } else if (state === MouseState.MEASURE_ANGLE) {
+            title.innerText = "Tool: Measure Angle";
+            let step = this.mouseControl.angleMeasurementTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select first line";
+            else instruction.innerText = "Step 2/2: Select second line";
+        } else if (state === MouseState.MEASURE_RADIUS) {
+            title.innerText = "Tool: Measure Radius";
+            instruction.innerText = "Click on a circle to measure its radius";
         } else if (state === MouseState.CIRCLE_3T) {
             title.innerText = "Tool: 3-Tangent Circle";
-            let lines = this.mouseControl.tempLines.length;
-            if (lines === 0) instruction.innerText = "Step 1/3: Select 1st intersecting line";
-            else if (lines === 1) instruction.innerText = "Step 2/3: Select 2nd intersecting line";
-            else if (lines === 2) instruction.innerText = "Step 3/3: Select 3rd intersecting line (final)";
+            let lines = this.mouseControl.circle3TTool.selectedLines.length;
+            if (lines === 0) instruction.innerText = "Step 1/3: Select 1st intersecting object";
+            else if (lines === 1) instruction.innerText = "Step 2/3: Select 2nd intersecting object";
+            else if (lines === 2) instruction.innerText = "Step 3/3: Select 3rd intersecting object (final)";
         } else if (state === MouseState.CIRCLE_2T1R) {
             title.innerText = "Tool: Circle (2 Tangents, 1 Radius)";
-            let lines = this.mouseControl.tempLines.length;
+            let lines = this.mouseControl.circle2T1RTool.selectedLines.length;
             if (lines === 0) {
-                instruction.innerText = "Step 1/3: Select 1st tangent line";
+                instruction.innerText = "Step 1/3: Select 1st tangent object";
             } else if (lines === 1) {
-                instruction.innerText = "Step 2/3: Select 2nd tangent line";
+                instruction.innerText = "Step 2/3: Select 2nd tangent object";
             } else if (lines === 2) {
                 instruction.innerText = "Step 3/3: Click inside a quadrant to place circle.";
                 

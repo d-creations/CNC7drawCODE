@@ -62,20 +62,54 @@ export class PropertyEditor {
         let colorInput = document.createElement('input');
         colorInput.type = "text"; 
         colorInput.value = this.selectedObject.color;
-        colorInput.onchange = (e) => {
-             this.selectedObject.changeColor(e.target.value);
-             this.drawBoard.draw();
+        
+        let lastAppliedColor = this.selectedObject.color;
+        const applyColor = (e) => {
+            const currentVal = e.target.value;
+            if (currentVal !== lastAppliedColor) {
+                lastAppliedColor = currentVal;
+                this.selectedObject.changeColor(currentVal);
+                this.drawBoard.draw();
+            }
         };
+
+        colorInput.onchange = applyColor;
+        colorInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                applyColor(e);
+                e.target.blur();
+            }
+        });
 
         colorDivArea.style.marginTop = "10px";
         colorDivArea.appendChild(colorLabel);
         colorDivArea.appendChild(colorInput);
         this.container.appendChild(colorDivArea);
         
+        // OK Button purely for closing/applying
+        let btnOk = document.createElement('button');
+        btnOk.innerText = "OK ✓";
+        btnOk.style.backgroundColor = "#4CAF50";
+        btnOk.style.color = "white";
+        btnOk.style.border = "none";
+        btnOk.style.padding = "4px 12px";
+        btnOk.style.marginRight = "5px";
+        btnOk.style.cursor = "pointer";
+        btnOk.onclick = () => {
+            // Apply all focused elements just in case
+            if (document.activeElement && document.activeElement.tagName === "INPUT") {
+                document.activeElement.blur();
+            }
+            // Close the property editor by deselecting the object
+            this.setObject(null);
+            this.drawBoard.draw();
+        }
+
         // Refresh Button simply forces a redraw and re-render if updated
         let btnRefresh = document.createElement('button');
         btnRefresh.innerText = "Refresh View";
         btnRefresh.style.marginRight = "5px";
+        btnRefresh.style.padding = "4px 8px";
         btnRefresh.onclick = () => {
             this.drawBoard.draw();
             this.render();
@@ -86,14 +120,19 @@ export class PropertyEditor {
         btnDelete.style.backgroundColor = "#ff4444";
         btnDelete.style.color = "white";
         btnDelete.style.border = "none";
-        btnDelete.style.padding = "2px 8px";
+        btnDelete.style.padding = "4px 8px";
         btnDelete.style.cursor = "pointer";
         btnDelete.onclick = () => {
             this.drawBoard.deleteObject(this.selectedObject);
+            this.setObject(null);
         }
 
         let buttonArea = document.createElement('div');
         buttonArea.style.marginTop = "15px";
+        buttonArea.style.display = "flex";
+        buttonArea.style.flexWrap = "wrap";
+        buttonArea.style.gap = "5px";
+        buttonArea.appendChild(btnOk);
         buttonArea.appendChild(btnRefresh);
         buttonArea.appendChild(btnDelete);
         
@@ -109,11 +148,25 @@ export class PropertyEditor {
         
         let xInput = this.createNumberField("X", pointObj.vec4.x, (val) => {
              pointObj.vec4.x = val;
+             if (pointObj.constraintId) {
+                 let geo = this.drawBoard.constraintSystem.geometries.get(pointObj.constraintId);
+                 if (geo) {
+                     geo.data.x = val;
+                     this.drawBoard.saveState();
+                 }
+             }
              this.drawBoard.draw();
         });
         
         let yInput = this.createNumberField("Y", pointObj.vec4.y, (val) => {
              pointObj.vec4.y = val;
+             if (pointObj.constraintId) {
+                 let geo = this.drawBoard.constraintSystem.geometries.get(pointObj.constraintId);
+                 if (geo) {
+                     geo.data.y = val;
+                     this.drawBoard.saveState();
+                 }
+             }
              this.drawBoard.draw();
         });
         
@@ -137,9 +190,24 @@ export class PropertyEditor {
         
         // Show clean precision without infinite float trails in the input
         inp.value = parseFloat(value).toFixed(AppConfig.drawBoard.coordPrecision);
-        inp.onchange = (e) => {
-           onChangeCallback(parseFloat(e.target.value));
-        }
+        
+        let lastAppliedValue = parseFloat(value);
+        const applyValue = (e) => {
+            const currentVal = parseFloat(e.target.value);
+            if (!isNaN(currentVal)) {
+                lastAppliedValue = currentVal;
+                onChangeCallback(currentVal);
+            }
+        };
+
+        inp.onchange = applyValue;
+        
+        inp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                applyValue(e);
+                e.target.blur();
+            }
+        });
 
         div.appendChild(lbl);
         div.appendChild(inp);

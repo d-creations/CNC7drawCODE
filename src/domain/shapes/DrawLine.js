@@ -48,24 +48,4 @@ export class DrawLine extends BaseShape {
         editor.buildPointFields(this.startPoint, "Start Point");
         editor.buildPointFields(this.endpoint, "End Point");
     }
-
-    static create(drawBoard, startParam, endParam) {
-        drawBoard.clearTempObjects();
-        
-        let p1 = Point.resolve(drawBoard, startParam, false);
-        let p2 = Point.resolve(drawBoard, endParam, false);
-
-        drawBoard.drawObjects.push(new DrawLine(drawBoard.context, drawBoard.camera, p1, p2));
-        drawBoard.draw();
-    }
-
-    static createTemp(drawBoard, startParam, endParam) {
-        drawBoard.clearTempObjects();
-        
-        let p1 = Point.resolve(drawBoard, startParam, true);
-        let p2 = Point.resolve(drawBoard, endParam, true);
-
-        drawBoard.drawTempObjects.push(new DrawLine(drawBoard.context, drawBoard.camera, p1, p2));
-        drawBoard.draw();
-    }
 }

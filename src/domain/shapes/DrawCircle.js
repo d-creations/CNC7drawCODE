@@ -42,11 +42,48 @@ export class DrawCircle extends BaseShape {
         
         let rInput = editor.createNumberField("Radius", this.radius, (val) => {
             this.radius = val;
+            if (this.constraintId) {
+                let geo = editor.drawBoard.constraintSystem.geometries.get(this.constraintId);
+                if (geo) {
+                    geo.data.r = val;
+                }
+                
+                // Keep connected algebraic constraints in sync to avoid solver locking!
+                for (let [cId, cDef] of editor.drawBoard.constraintSystem.constraints) {
+                    if (cDef.type === "RadiusMeasurement" && cDef.targets.includes(this.constraintId)) {
+                        cDef.value = val;
+                        let mGeo = editor.drawBoard.constraintSystem.geometries.get(cDef.geometryId);
+                        if (mGeo) mGeo.data.value = val;
+                    }
+                }
+                
+                editor.drawBoard.saveState();
+                editor.drawBoard.constraintSystem.solveLocal(this.constraintId);
+            }
             editor.drawBoard.draw();
+            editor.render();
         });
         
         let dInput = editor.createNumberField("Diameter", this.radius * 2, (val) => {
             this.radius = val / 2.0;
+            if (this.constraintId) {
+                let geo = editor.drawBoard.constraintSystem.geometries.get(this.constraintId);
+                if (geo) {
+                    geo.data.r = this.radius;
+                }
+                
+                // Keep connected algebraic constraints in sync to avoid solver locking!
+                for (let [cId, cDef] of editor.drawBoard.constraintSystem.constraints) {
+                    if (cDef.type === "RadiusMeasurement" && cDef.targets.includes(this.constraintId)) {
+                        cDef.value = this.radius;
+                        let mGeo = editor.drawBoard.constraintSystem.geometries.get(cDef.geometryId);
+                        if (mGeo) mGeo.data.value = this.radius;
+                    }
+                }
+                
+                editor.drawBoard.saveState();
+                editor.drawBoard.constraintSystem.solveLocal(this.constraintId);
+            }
             editor.drawBoard.draw();
             editor.render();
         });
@@ -54,31 +91,5 @@ export class DrawCircle extends BaseShape {
         radiusArea.appendChild(rInput);
         radiusArea.appendChild(dInput);
         editor.container.appendChild(radiusArea);
-    }
-
-    static create(drawBoard, startParam, endParam) {
-        drawBoard.clearTempObjects();
-        let p1 = Point.resolve(drawBoard, startParam, false);
-        
-        let endVec = drawBoard.camera.getWorldVec(endParam.x, endParam.y);
-        let dx = endVec.x - p1.vec4.x;
-        let dy = endVec.y - p1.vec4.y;
-        let radius = Math.sqrt(dx*dx + dy*dy);
-
-        drawBoard.drawObjects.push(new DrawCircle(drawBoard.context, drawBoard.camera, p1, radius));
-        drawBoard.draw();
-    }
-
-    static createTemp(drawBoard, startParam, endParam) {
-        drawBoard.clearTempObjects();
-        let p1 = Point.resolve(drawBoard, startParam, true);
-        
-        let endVec = drawBoard.camera.getWorldVec(endParam.x, endParam.y);
-        let dx = endVec.x - p1.vec4.x;
-        let dy = endVec.y - p1.vec4.y;
-        let radius = Math.sqrt(dx*dx + dy*dy);
-
-        drawBoard.drawTempObjects.push(new DrawCircle(drawBoard.context, drawBoard.camera, p1, radius));
-        drawBoard.draw();
     }
 }

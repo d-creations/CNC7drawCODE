@@ -8,6 +8,11 @@ export class Point extends BaseShape {
         this.vec4 = vec4;
     }
 
+    get x() { return this.vec4.x; }
+    set x(val) { this.vec4.x = val; }
+    get y() { return this.vec4.y; }
+    set y(val) { this.vec4.y = val; }
+
     draw() {
         let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix());
         this.ctx.beginPath();
@@ -29,26 +34,5 @@ export class Point extends BaseShape {
     /** Ask the PropertyEditor to render this shape's specific properties */
     buildProperties(editor) {
         editor.buildPointFields(this, "Position");
-    }
-
-    static resolve(drawBoard, ptParam, isTemp = false) {
-        if (ptParam.exist) return ptParam.obj;
-        let vec = drawBoard.camera.getWorldVec(ptParam.x, ptParam.y);
-        let ptObj = new Point(drawBoard.context, drawBoard.camera, vec);
-        
-        if (isTemp) {
-            drawBoard.drawTempObjects.push(ptObj);
-            // DO NOT cache a temporary point into the ptParam, otherwise the final object will reference a cleared temporary point!
-        } else {
-            drawBoard.drawObjects.push(ptObj);
-            ptParam.obj = ptObj;
-            ptParam.exist = true;
-        }
-        return ptObj;
-    }
-
-    static create(drawBoard, ptParam) {
-        Point.resolve(drawBoard, ptParam, false);
-        drawBoard.draw();
     }
 }

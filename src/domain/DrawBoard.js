@@ -1,6 +1,14 @@
 import { Vec4 } from "./Camera.js"
 import { stickFont } from "./LetterDrawer.js"
 import { AppConfig } from "./Config.js"
+import { ConstraintSystem } from "./constraints/ConstraintSystem.js"
+import { LocalSketchStorage } from "./storage/LocalSketchStorage.js"
+import { Point } from "./shapes/Point.js"
+import { DrawLine } from "./shapes/DrawLine.js"
+import { DrawCircle } from "./shapes/DrawCircle.js"
+import { LengthMeasurementShape } from "./shapes/LengthMeasurementShape.js"
+import { AngleMeasurementShape } from "./shapes/AngleMeasurementShape.js"
+import { RadiusMeasurementShape } from "./shapes/RadiusMeasurementShape.js"
 
 let selectedobj = {
     exist : false,
@@ -19,6 +27,8 @@ export class DrawBoard{
     selectDistLampda
     hoverObj
     camera
+    constraintSystem
+    storage
 
     constructor(canvas,camera){
         this.camera = camera
@@ -28,6 +38,13 @@ export class DrawBoard{
         this.drawTempObjects = []    
         this.selectDistLampda = 10.0
         this.cursorPos = { x: 0, y: 0 }
+        
+        this.constraintSystem = new ConstraintSystem()
+        this.storage = new LocalSketchStorage()
+        
+        // Auto-load state if the browser has cached shapes
+        this.loadState()
+        
         this.draw()
         this.hoverObj = null
 
@@ -159,25 +176,152 @@ export class DrawBoard{
     }
 
     deleteObject(objToRemove){
-        this.drawObjects = this.drawObjects.filter(obj => obj !== objToRemove);
-        if(this.hoverObj === objToRemove) {
+        // 1. Remove from math JSON and get all recursively deleted dependent objects
+        let removedConstraintIds = [];
+        if (objToRemove.constraintId) {
+            removedConstraintIds = this.constraintSystem.removeGeometry(objToRemove.constraintId);
+        }
+        
+        // 2. Filter out the original object AND any cascading dependent visuals (like orphaned Lines/Circles)
+        this.drawObjects = this.drawObjects.filter(obj => {
+            if (obj === objToRemove) return false;
+            if (obj.constraintId && removedConstraintIds.includes(obj.constraintId)) return false;
+            return true;
+        });
+
+        // 3. Clear Hover object if it was deleted
+        if(this.hoverObj === objToRemove || (this.hoverObj && removedConstraintIds.includes(this.hoverObj.constraintId))) {
             this.hoverObj = null;
             if(this.onSelectionChanged) {
                 this.onSelectionChanged(null);
             }
         }
+        
         this.draw();
+        this.saveState();
     }
 
     clearAll(){
         this.drawObjects = []
         this.clearTempObjects()
+        this.constraintSystem.load({ geometries: [], constraints: [] }); // wipe physics
+        this.storage.clear();
         this.draw()
-
     }
 
+    // =======================================================
+    // LOCAL STORAGE AUTOSAVE / HYDRATION
+    // =======================================================
+
+    saveState() {
+        if (!this.constraintSystem) return;
+        const data = this.constraintSystem.exportJSON();
+        this.storage.save(data);
+    }
+
+    loadState() {
+        const storedData = this.storage.load();
+        if (!storedData || !storedData.geometries || storedData.geometries.length === 0) return;
+
+        this.constraintSystem.load(storedData);
+        let uiMap = new Map(); // Links JSON IDs to Visual objects
+
+        // Pass 1: Build Visual Points first
+        for (const geo of storedData.geometries) {
+            if (geo.type === "Point") {
+                let pObj = new Point(this.context, this.camera, new Vec4(geo.data.x, geo.data.y, 0, 1));
+                pObj.constraintId = geo.id;
+                uiMap.set(geo.id, pObj);
+                this.drawObjects.push(pObj);
+            }
+        }
+
+        // Pass 2: Connect Lines and Circles to the Visual Points
+        for (const geo of storedData.geometries) {
+            if (geo.type === "Line") {
+                let p1 = uiMap.get(geo.data.start);
+                let p2 = uiMap.get(geo.data.end);
+                if (p1 && p2) {
+                    let lObj = new DrawLine(this.context, this.camera, p1, p2);
+                    lObj.constraintId = geo.id;
+                    this.drawObjects.push(lObj);
+                }
+            } else if (geo.type === "Circle") {
+                let centerPoint = uiMap.get(geo.data.center);
+                if (centerPoint) {
+                    let cObj = new DrawCircle(this.context, this.camera, centerPoint, geo.data.r);
+                    cObj.constraintId = geo.id;
+                    this.drawObjects.push(cObj);
+                }
+            } else if (geo.type === "LengthMeasurement") {
+                let p1 = this.drawObjects.find(o => o.constraintId === geo.data.p1Id) || geo.data.p1;
+                let p2 = this.drawObjects.find(o => o.constraintId === geo.data.p2Id) || geo.data.p2;
+                if (p1 && p2) {
+                    let LM = new LengthMeasurementShape(this, p1, p2);
+                    LM.constraintId = geo.id;
+                    if (geo.data.offset !== undefined) LM.offset = geo.data.offset;
+                    this.drawObjects.push(LM);
+                }
+            } else if (geo.type === "AngleMeasurement") {
+                // Try to find the lines in drawObjects
+                let l1 = this.drawObjects.find(o => o.constraintId === geo.data.l1Id);
+                let l2 = this.drawObjects.find(o => o.constraintId === geo.data.l2Id);
+                if (l1 && l2) {
+                    let AM = new AngleMeasurementShape(this, l1, l2);
+                    AM.constraintId = geo.id;
+                    if (geo.data.radius !== undefined) AM.radius = geo.data.radius;
+                    this.drawObjects.push(AM);
+                }
+            } else if (geo.type === "RadiusMeasurement") {
+                let circ = this.drawObjects.find(o => o.constraintId === geo.data.circleId);
+                if (circ) {
+                    let RM = new RadiusMeasurementShape(this, circ);
+                    RM.constraintId = geo.id;
+                    if (geo.data.angle !== undefined) RM.angle = geo.data.angle;
+                    if (geo.data.offset !== undefined) RM.offset = geo.data.offset;
+                    this.drawObjects.push(RM);
+                }
+            }
+        }
+    }
 
     draw(){
+        // Pre-render sync step: Pull absolute coordinates from Constraint System geometry to view logic
+        if (this.constraintSystem && this.constraintSystem.geometries) {
+            for (let obj of this.drawObjects) {
+                if (obj.constraintId) {
+                    let geoData = this.constraintSystem.geometries.get(obj.constraintId)?.data;
+                    if (geoData) {
+                        if (obj.constructor.name === "Point") {
+                            if (!obj.vec4) obj.vec4 = new Vec4(0,0,0,1);
+                            obj.vec4.x = geoData.x;
+                            obj.vec4.y = geoData.y;
+                        } 
+                        else if (obj.constructor.name === "DrawCircle") {
+                            let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
+                            if (centerData) {
+                                obj.centerPoint.vec4.x = centerData.x;
+                                obj.centerPoint.vec4.y = centerData.y;
+                            }
+                            obj.radius = geoData.r;
+                        }
+                        else if (obj.constructor.name === "DrawLine") {
+                            let startData = this.constraintSystem.geometries.get(geoData.start)?.data;
+                            let endData = this.constraintSystem.geometries.get(geoData.end)?.data;
+                            if (startData) {
+                                obj.startPoint.vec4.x = startData.x;
+                                obj.startPoint.vec4.y = startData.y;
+                            }
+                            if (endData) {
+                                obj.endpoint.vec4.x = endData.x;
+                                obj.endpoint.vec4.y = endData.y;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Set background color
         this.context.fillStyle = "whitesmoke";
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
