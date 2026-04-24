@@ -9,6 +9,7 @@ import { DrawCircle } from "./shapes/DrawCircle.js"
 import { LengthMeasurementShape } from "./shapes/LengthMeasurementShape.js"
 import { AngleMeasurementShape } from "./shapes/AngleMeasurementShape.js"
 import { RadiusMeasurementShape } from "./shapes/RadiusMeasurementShape.js"
+import { ClipboardManager } from "./ClipboardManager.js"
 
 let selectedobj = {
     exist : false,
@@ -41,6 +42,7 @@ export class DrawBoard{
         
         this.constraintSystem = new ConstraintSystem()
         this.storage = new LocalSketchStorage()
+        this.clipboardManager = new ClipboardManager(this)
         
         // Auto-load state if the browser has cached shapes
         this.loadState()
@@ -136,7 +138,7 @@ export class DrawBoard{
                 if (obj !== mainObj && typeof obj.changeColor === 'function') {
                     // Note: Sub-objects like Tangent points override their color in draw(), 
                     // but we can reset them here just in case.
-                    obj.changeColor("blue");
+                    obj.changeColor("blue"); // Wait wait... keeping the original intact
                 }
                 let dist = obj.check(x,y)
                 if(dist < this.selectDistLampda){
@@ -159,6 +161,54 @@ export class DrawBoard{
         }
 
         this.draw()
+    }
+
+    selectObjectsInArea(startX, startY, endX, endY, previewOnly = false) {
+        let requireComplete = endY > startY; // Moving down requires fully inside
+        let minX = Math.min(startX, endX);
+        let maxX = Math.max(startX, endX);
+        let minY = Math.min(startY, endY);
+        let maxY = Math.max(startY, endY);
+
+        let selected = [];
+        
+        for (let obj of this.drawObjects) {
+            obj.changeColor("red"); // Reset
+            
+            if (obj.checkInsideArea && obj.checkInsideArea(minX, minY, maxX, maxY, requireComplete)) {
+                obj.changeColor("green");
+                selected.push(obj);
+            }
+        }
+
+        if (!previewOnly) {
+            // Send selected array to the property editor UI if items exist
+            this.selectedObjects = selected;
+            
+            let displayHover = null;
+            if (selected.length === 1) {
+                displayHover = selected[0];
+            } else if (selected.length > 1) {
+                displayHover = selected;
+            }
+            
+            if (this.hoverObj !== displayHover) {
+                this.hoverObj = displayHover;
+                if (this.onSelectionChanged) {
+                    this.onSelectionChanged(this.hoverObj);
+                }
+            }
+        }
+        
+        this.draw(); // Make sure to render the color changes to the screen!
+    }
+
+    cutObjects(objects) {
+        this.clipboardManager.cutObjects(objects);
+    }
+
+    insertClipboard() {
+        this.clipboardManager.insertClipboard();
     }
 
     drawLine(startObject,endObject){
@@ -331,6 +381,17 @@ export class DrawBoard{
         }
         for(let obj of this.drawTempObjects){
             obj.draw()
+        }
+
+        if (this.selectionBox && this.selectionBox.active) {
+            let sb = this.selectionBox;
+            let width = sb.endX - sb.startX;
+            let height = sb.endY - sb.startY;
+            this.context.fillStyle = height > 0 ? "rgba(0, 0, 255, 0.2)" : "rgba(0, 255, 0, 0.2)"; // Blue down, Green up
+            this.context.fillRect(sb.startX, sb.startY, width, height);
+            this.context.strokeStyle = height > 0 ? "blue" : "green";
+            this.context.lineWidth = 1;
+            this.context.strokeRect(sb.startX, sb.startY, width, height);
         }
 
         // Dynamic center point axis (crosses origin 0,0)

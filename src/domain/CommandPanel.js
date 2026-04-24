@@ -22,6 +22,129 @@ export class CommandPanel {
         
         parentDiv.appendChild(this.container);
         this.mouseControl.onStateChange = () => this.render();
+        
+        this.createToolbar(parentDiv);
+    }
+
+    createToolbar(parentDiv) {
+        let menudiv = document.createElement("div");
+        menudiv.className = "toolbar-menu";
+        
+        let buttonClear = document.createElement("Button");
+        buttonClear.innerText = "Clear";
+        buttonClear.addEventListener('click', () => {
+            this.mouseControl.setState(MouseState.NONE);
+            this.mouseControl.drawBoard.clearAll();
+        });
+
+        let buttonPoint = document.createElement("Button");
+        buttonPoint.innerText = "Point";
+        buttonPoint.addEventListener('click', () => { this.mouseControl.setState(MouseState.POINT); });
+
+        let buttonLine = document.createElement("Button");
+        buttonLine.innerText = "Line";
+        buttonLine.addEventListener('click', () => { this.mouseControl.setState(MouseState.LINE); });
+        
+        let buttonCircle = document.createElement("Button");
+        buttonCircle.innerText = "Circle (C+R)";
+        buttonCircle.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE); });
+
+        let buttonCircle3P = document.createElement("Button");
+        buttonCircle3P.innerText = "Circle (3P)";
+        buttonCircle3P.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_3P); });
+
+        let buttonCircle2TR = document.createElement("Button");
+        buttonCircle2TR.innerText = "Circle (2T, 1R)";
+        buttonCircle2TR.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_2T1R); });
+
+        let buttonCircle3T = document.createElement("Button");
+        buttonCircle3T.innerText = "Circle (3T)";
+        buttonCircle3T.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_3T); });
+
+        let buttonMeasureLength = document.createElement("Button");
+        buttonMeasureLength.innerText = "Measure Length";
+        buttonMeasureLength.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_LENGTH); });
+
+        let buttonMeasureAngle = document.createElement("Button");
+        buttonMeasureAngle.innerText = "Measure Angle";
+        buttonMeasureAngle.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_ANGLE); });
+
+        let buttonMeasureRadius = document.createElement("Button");
+        buttonMeasureRadius.innerText = "Measure Radius";
+        buttonMeasureRadius.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_RADIUS); });
+
+        let circleGroup = document.createElement("div");
+        circleGroup.style.border = "1px solid #ccc";
+        circleGroup.style.padding = "5px";
+        circleGroup.style.margin = "5px";
+        circleGroup.style.display = "inline-flex";
+        circleGroup.style.flexDirection = "column";
+        circleGroup.innerText = "Circles";
+        circleGroup.style.fontSize = "12px";
+
+        circleGroup.appendChild(buttonCircle);
+        circleGroup.appendChild(buttonCircle3P);
+        circleGroup.appendChild(buttonCircle2TR);
+        circleGroup.appendChild(buttonCircle3T);
+
+        let measureGroup = document.createElement("div");
+        measureGroup.style.border = "1px solid #ccc";
+        measureGroup.style.padding = "5px";
+        measureGroup.style.margin = "5px";
+        measureGroup.style.display = "inline-flex";
+        measureGroup.style.flexDirection = "column";
+        measureGroup.innerText = "Measure";
+        measureGroup.style.fontSize = "12px";
+
+        measureGroup.appendChild(buttonMeasureLength);
+        measureGroup.appendChild(buttonMeasureAngle);
+        measureGroup.appendChild(buttonMeasureRadius);
+
+        let buttonESC = document.createElement("Button");
+        buttonESC.innerText = "ESC";
+        buttonESC.addEventListener('click', () => { this.mouseControl.setState(MouseState.NONE); });
+
+        let buttonSelect = document.createElement("Button");
+        buttonSelect.innerText = "Select";
+        buttonSelect.addEventListener('click', () => { this.mouseControl.setState(MouseState.SELECT); });
+
+        let buttonMove = document.createElement("Button");
+        buttonMove.innerText = "Move";
+        buttonMove.addEventListener('click', () => { this.mouseControl.setState(MouseState.MOVE); });
+
+        let buttonPaste = document.createElement("Button");
+        buttonPaste.innerText = "Paste";
+        buttonPaste.style.backgroundColor = "#ff9800";
+        buttonPaste.style.color = "white";
+        buttonPaste.style.border = "none";
+        buttonPaste.style.padding = "3px 8px";
+        buttonPaste.style.cursor = "pointer";
+        buttonPaste.addEventListener('click', () => { 
+            this.mouseControl.setState(MouseState.PASTE);
+        });
+
+        let buttonZoomIn = document.createElement("Button");
+        buttonZoomIn.innerText = "+";
+        buttonZoomIn.addEventListener('click', () => { this.mouseControl.drawBoard.zoom(1.2); });
+
+        let buttonZoomOut = document.createElement("Button");
+        buttonZoomOut.innerText = "-";
+        buttonZoomOut.addEventListener('click', () => { this.mouseControl.drawBoard.zoom(1/1.2); });
+
+        menudiv.appendChild(buttonMove);
+        menudiv.appendChild(buttonPaste);
+        menudiv.appendChild(buttonZoomIn);
+        menudiv.appendChild(buttonZoomOut);
+
+        menudiv.appendChild(buttonClear);
+        menudiv.appendChild(buttonPoint);
+        menudiv.appendChild(buttonLine);
+        menudiv.appendChild(circleGroup);
+        menudiv.appendChild(measureGroup);
+        menudiv.appendChild(buttonESC);
+        menudiv.appendChild(buttonSelect);
+
+        parentDiv.appendChild(menudiv);
     }
 
     render() {
@@ -76,6 +199,9 @@ export class CommandPanel {
         } else if (state === MouseState.MEASURE_RADIUS) {
             title.innerText = "Tool: Measure Radius";
             instruction.innerText = "Click on a circle to measure its radius";
+        } else if (state === MouseState.PASTE) {
+            title.innerText = "Tool: Paste";
+            instruction.innerText = "Move mouse to position clipboard objects, click to paste.";
         } else if (state === MouseState.CIRCLE_3T) {
             title.innerText = "Tool: 3-Tangent Circle";
             let lines = this.mouseControl.circle3TTool.selectedLines.length;
@@ -119,6 +245,12 @@ export class CommandPanel {
                     let val = parseFloat(e.target.value);
                     if (val > 0) this.mouseControl.commandRadius = val;
                 };
+                rInput.addEventListener('keydown', (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        btnOk.click();
+                    }
+                });
 
                 let btnOk = document.createElement('button');
                 btnOk.innerText = "OK";

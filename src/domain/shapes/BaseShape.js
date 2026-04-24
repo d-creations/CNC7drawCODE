@@ -38,6 +38,22 @@ export class BaseShape {
         throw new Error("Method 'check(x, y)' must be implemented by subclasses.");
     }
 
+    /**
+     * Hit-box area selection logic.
+     * Calculates if the shape is inside the given screen area.
+     * @param {number} minX 
+     * @param {number} minY 
+     * @param {number} maxX 
+     * @param {number} maxY 
+     * @param {boolean} requireComplete Whether the shape must be fully inside the area
+     * @returns {boolean} True if inside the area.
+     * @abstract
+     */
+    checkInsideArea(minX, minY, maxX, maxY, requireComplete) {
+        // By default, shapes (like Measurements) are NOT selected by the drag box unless they override this.
+        return false;
+    }
+
     /** 
      * Self-documents to the Property Editor UI what editable variables it has.
      * @param {PropertyEditor} editor The UI Property Editor instance providing input generators.

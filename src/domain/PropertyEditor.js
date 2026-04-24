@@ -43,50 +43,7 @@ export class PropertyEditor {
         this.container.style.display = "block";
         
         let title = document.createElement('h3');
-        title.innerText = this.selectedObject.constructor.name + " Properties";
-        title.style.marginTop = "0";
-        this.container.appendChild(title);
         
-        // Polymorphic property building!
-        if (typeof this.selectedObject.buildProperties === "function") {
-            this.selectedObject.buildProperties(this);
-        }
-        
-        // Allow color changing for testing standard properties
-        let colorDivArea = document.createElement('div');
-        let colorLabel = document.createElement('label');
-        colorLabel.innerText = "Color: ";
-        colorLabel.style.display = "inline-block";
-        colorLabel.style.width = "80px";
-
-        let colorInput = document.createElement('input');
-        colorInput.type = "text"; 
-        colorInput.value = this.selectedObject.color;
-        
-        let lastAppliedColor = this.selectedObject.color;
-        const applyColor = (e) => {
-            const currentVal = e.target.value;
-            if (currentVal !== lastAppliedColor) {
-                lastAppliedColor = currentVal;
-                this.selectedObject.changeColor(currentVal);
-                this.drawBoard.draw();
-            }
-        };
-
-        colorInput.onchange = applyColor;
-        colorInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                applyColor(e);
-                e.target.blur();
-            }
-        });
-
-        colorDivArea.style.marginTop = "10px";
-        colorDivArea.appendChild(colorLabel);
-        colorDivArea.appendChild(colorInput);
-        this.container.appendChild(colorDivArea);
-        
-        // OK Button purely for closing/applying
         let btnOk = document.createElement('button');
         btnOk.innerText = "OK ✓";
         btnOk.style.backgroundColor = "#4CAF50";
@@ -102,7 +59,6 @@ export class PropertyEditor {
             }
             // Close the property editor by deselecting the object
             this.setObject(null);
-            this.drawBoard.draw();
         }
 
         // Refresh Button simply forces a redraw and re-render if updated
@@ -116,16 +72,104 @@ export class PropertyEditor {
         }
         
         let btnDelete = document.createElement('button');
-        btnDelete.innerText = "Delete Object";
+        btnDelete.innerText = "Delete";
         btnDelete.style.backgroundColor = "#ff4444";
         btnDelete.style.color = "white";
         btnDelete.style.border = "none";
         btnDelete.style.padding = "4px 8px";
         btnDelete.style.cursor = "pointer";
         btnDelete.onclick = () => {
-            this.drawBoard.deleteObject(this.selectedObject);
+            if (Array.isArray(this.selectedObject)) {
+                for (let obj of this.selectedObject) {
+                    this.drawBoard.deleteObject(obj);
+                }
+            } else {
+                this.drawBoard.deleteObject(this.selectedObject);
+            }
             this.setObject(null);
         }
+        
+        let btnCut = document.createElement('button');
+        btnCut.innerText = "Cut";
+        btnCut.style.backgroundColor = "#ff9800";
+        btnCut.style.color = "white";
+        btnCut.style.border = "none";
+        btnCut.style.padding = "4px 8px";
+        btnCut.style.marginLeft = "5px";
+        btnCut.style.cursor = "pointer";
+        btnCut.onclick = () => {
+            let objsToCut = Array.isArray(this.selectedObject) ? this.selectedObject : [this.selectedObject];
+            this.drawBoard.cutObjects(objsToCut);
+            this.setObject(null);
+        };
+
+        if (Array.isArray(this.selectedObject) && this.selectedObject.length > 1) {
+            // MULTI-SELECTION MODE
+            title.innerText = this.selectedObject.length + " Objects Selected";
+            title.style.marginTop = "0";
+            this.container.appendChild(title);
+            
+            let btnArea = document.createElement('div');
+            btnArea.style.marginTop = "15px";
+            btnArea.style.display = "flex";
+            btnArea.style.gap = "8px";
+            btnArea.appendChild(btnDelete);
+            btnArea.appendChild(btnCut);
+            
+            let closeBtn = document.createElement('button');
+            closeBtn.innerText = "Cancel";
+            closeBtn.onclick = () => this.setObject(null);
+            btnArea.appendChild(closeBtn);
+            
+            this.container.appendChild(btnArea);
+            return;
+        }
+
+        // SINGLE OBJECT MODE
+        let activeObj = Array.isArray(this.selectedObject) ? this.selectedObject[0] : this.selectedObject;
+
+        title.innerText = activeObj.constructor.name + " Properties";
+        title.style.marginTop = "0";
+        this.container.appendChild(title);
+
+        if (typeof activeObj.buildProperties === "function") {
+            activeObj.buildProperties(this);
+        }
+        
+        // Allow color changing for testing standard properties
+        let colorDivArea = document.createElement('div');
+        let colorLabel = document.createElement('label');
+        colorLabel.innerText = "Color: ";
+        colorLabel.style.display = "inline-block";
+        colorLabel.style.width = "80px";
+
+        let colorInput = document.createElement('input');
+        colorInput.type = "text"; 
+        colorInput.value = activeObj.color;
+        
+        let lastAppliedColor = activeObj.color;
+        const applyColor = (e) => {
+            const currentVal = e.target.value;
+            if (currentVal !== lastAppliedColor) {
+                lastAppliedColor = currentVal;
+                activeObj.changeColor(currentVal);
+                this.drawBoard.draw();
+            }
+        };
+
+        colorInput.onchange = applyColor;
+        colorInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault(); // prevent triggering default submit / Move button
+                applyColor(e);
+                e.target.blur();
+            }
+        });
+
+        colorDivArea.style.marginTop = "10px";
+        colorDivArea.appendChild(colorLabel);
+        colorDivArea.appendChild(colorInput);
+        this.container.appendChild(colorDivArea);
 
         let buttonArea = document.createElement('div');
         buttonArea.style.marginTop = "15px";
@@ -135,6 +179,7 @@ export class PropertyEditor {
         buttonArea.appendChild(btnOk);
         buttonArea.appendChild(btnRefresh);
         buttonArea.appendChild(btnDelete);
+        buttonArea.appendChild(btnCut);
         
         this.container.appendChild(buttonArea);
     }
@@ -204,6 +249,7 @@ export class PropertyEditor {
         
         inp.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
+                e.preventDefault(); // Stop bubbling which might click the first UI Button (Move)
                 applyValue(e);
                 e.target.blur();
             }

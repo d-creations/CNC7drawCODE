@@ -13,7 +13,7 @@ import { DrawCircle } from "./shapes/DrawCircle.js";
 import { Point } from "./shapes/Point.js";
 import { Vec4 } from "./Camera.js";
 
-export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12 };
+export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13 };
 
 export class MouseControl{
 
@@ -35,7 +35,6 @@ export class MouseControl{
 
     constructor(parentDiv,drawBoard){
         this.buttonState = MouseState.NONE
-        this.getMenu(parentDiv)
         this.drawBoard = drawBoard
         
         // Instantiate tools with reference to the constraint system
@@ -84,6 +83,16 @@ export class MouseControl{
         this.drawBoard.setCursorPos(position.x, position.y);
 
         this.drawBoard.clearTempObjects();
+
+        if (this.buttonState === MouseState.PASTE) {
+            let worldVec = this.drawBoard.camera.getWorldVec(position.x, position.y);
+            let previews = this.drawBoard.clipboardManager.getPreviewObjects(worldVec.x, worldVec.y);
+            for (let p of previews) {
+                this.drawBoard.drawTempObjects.push(p);
+            }
+            this.drawBoard.draw();
+            return;
+        }
 
         // Always show trailing lines for 3-Point circle if we have active points selected
         if (this.buttonState === MouseState.CIRCLE_3P && this.circle3PTool.selectedPoints.length > 0) {
@@ -151,7 +160,23 @@ export class MouseControl{
                 this.movePos = position
             }
             else if(this.buttonState == MouseState.SELECT){
-                this.drawBoard.selectObject(position.x,position.y)
+                if (!this.drawBoard.selectionBox) {
+                    this.drawBoard.selectionBox = { active: true, startX: this.downPosition.x, startY: this.downPosition.y, endX: position.x, endY: position.y };
+                } else {
+                    this.drawBoard.selectionBox.endX = position.x;
+                    this.drawBoard.selectionBox.endY = position.y;
+                }
+                
+                // Real-time preview of selection colors while dragging
+                this.drawBoard.selectObjectsInArea(
+                    this.drawBoard.selectionBox.startX,
+                    this.drawBoard.selectionBox.startY,
+                    this.drawBoard.selectionBox.endX,
+                    this.drawBoard.selectionBox.endY,
+                    true // previewOnly flag skip heavy UI reconstruction
+                );
+                
+                this.drawBoard.draw();
             }
         }
         else {
@@ -205,7 +230,10 @@ export class MouseControl{
         }
         
         if(this.buttonState == MouseState.SELECT){
-            this.drawBoard.selectObject(position.x,position.y)
+            let dragDist = Math.hypot(position.x - this.downPosition.x, position.y - this.downPosition.y);
+            if (dragDist < 5) {
+                this.drawBoard.selectObject(position.x,position.y)
+            }
         }
         else if (this.buttonState == MouseState.MEASURE_LENGTH) {
             this.lengthMeasurementTool.onCanvasClick(position.x, position.y);
@@ -235,10 +263,27 @@ export class MouseControl{
 
     mouseUp(position) {
         this.mousePressed = false
+        
+        if(this.buttonState == MouseState.SELECT && this.drawBoard.selectionBox && this.drawBoard.selectionBox.active){
+            // Box selection complete
+            this.drawBoard.selectObjectsInArea(
+                this.drawBoard.selectionBox.startX, 
+                this.drawBoard.selectionBox.startY, 
+                this.drawBoard.selectionBox.endX, 
+                this.drawBoard.selectionBox.endY
+            );
+            this.drawBoard.selectionBox = null;
+            this.drawBoard.draw();
+        }
+
         this.drawBoard.clearTempObjects(); // Clean out previews
         
         // Finalize standard creation
-        if(this.buttonState == MouseState.LINE){
+        if(this.buttonState === MouseState.PASTE) {
+            let worldPos = this.drawBoard.camera.getWorldVec(position.x, position.y);
+            this.drawBoard.clipboardManager.insertClipboard(worldPos.x, worldPos.y);
+            this.setState(MouseState.SELECT); // Reset back to select after dropping
+        } else if(this.buttonState == MouseState.LINE){
             this.lineTool.onCanvasClick(this.downPosition.x, this.downPosition.y); // start
             this.lineTool.onCanvasClick(position.x, position.y); // end
         }
@@ -291,125 +336,5 @@ export class MouseControl{
         // Auto-save on drag release
         this.drawBoard.saveState();
     }
-
-    getMenu(parentDiv){
-        let that = this
-        let menudiv = document.createElement("div")
-        let buttonClear = document.createElement("Button")
-        buttonClear.innerText   = "Clear"
-        buttonClear.addEventListener( 'click',()=>{
-            this.setState(MouseState.NONE);
-            this.drawBoard.clearAll()
-        }  );
-        let buttonPoint = document.createElement("Button")
-        buttonPoint.innerText = "Point"
-        buttonPoint.addEventListener( 'click',()=>{this.setState(MouseState.POINT)}  );
-        let buttonLine = document.createElement("Button")
-        buttonLine.innerText = "Line"
-        buttonLine.addEventListener( 'click',()=>{this.setState(MouseState.LINE)}  );
-        
-        let buttonCircle = document.createElement("Button")
-        buttonCircle.innerText = "Circle (C+R)"
-        buttonCircle.addEventListener( 'click',()=>{this.setState(MouseState.CIRCLE)}  );
-
-        let buttonCircle3P = document.createElement("Button")
-        buttonCircle3P.innerText = "Circle (3P)"
-        buttonCircle3P.addEventListener( 'click',()=>{
-            this.setState(MouseState.CIRCLE_3P);
-        });
-
-        let buttonCircle2TR = document.createElement("Button")
-        buttonCircle2TR.innerText = "Circle (2T, 1R)"
-        buttonCircle2TR.addEventListener( 'click',()=>{
-            this.setState(MouseState.CIRCLE_2T1R);
-        });
-
-        let buttonCircle3T = document.createElement("Button")
-        buttonCircle3T.innerText = "Circle (3T)"
-        buttonCircle3T.addEventListener( 'click',()=>{
-            this.setState(MouseState.CIRCLE_3T);
-        });
-
-        let buttonMeasureLength = document.createElement("Button")
-        buttonMeasureLength.innerText = "Measure Length"
-        buttonMeasureLength.addEventListener( 'click',()=>{
-            this.setState(MouseState.MEASURE_LENGTH);
-        });
-
-        let buttonMeasureAngle = document.createElement("Button")
-        buttonMeasureAngle.innerText = "Measure Angle"
-        buttonMeasureAngle.addEventListener( 'click',()=>{
-            this.setState(MouseState.MEASURE_ANGLE);
-        });
-
-        let buttonMeasureRadius = document.createElement("Button")
-        buttonMeasureRadius.innerText = "Measure Radius"
-        buttonMeasureRadius.addEventListener( 'click',()=>{
-            this.setState(MouseState.MEASURE_RADIUS);
-        });
-
-        let circleGroup = document.createElement("div");
-        circleGroup.style.border = "1px solid #ccc";
-        circleGroup.style.padding = "5px";
-        circleGroup.style.margin = "5px";
-        circleGroup.style.display = "inline-flex";
-        circleGroup.style.flexDirection = "column";
-        circleGroup.innerText = "Circles";
-        circleGroup.style.fontSize = "12px";
-
-        circleGroup.appendChild(buttonCircle);
-        circleGroup.appendChild(buttonCircle3P);
-        circleGroup.appendChild(buttonCircle2TR);
-        circleGroup.appendChild(buttonCircle3T);
-
-        let measureGroup = document.createElement("div");
-        measureGroup.style.border = "1px solid #ccc";
-        measureGroup.style.padding = "5px";
-        measureGroup.style.margin = "5px";
-        measureGroup.style.display = "inline-flex";
-        measureGroup.style.flexDirection = "column";
-        measureGroup.innerText = "Measure";
-        measureGroup.style.fontSize = "12px";
-
-        measureGroup.appendChild(buttonMeasureLength);
-        measureGroup.appendChild(buttonMeasureAngle);
-        measureGroup.appendChild(buttonMeasureRadius);
-
-        let buttonESC = document.createElement("Button")
-        buttonESC.innerText = "ESC"
-        buttonESC.addEventListener( 'click',()=>{this.setState(MouseState.NONE)}  );
-        let buttonSelect = document.createElement("Button")
-        buttonSelect.innerText = "Select"
-        buttonSelect.addEventListener( 'click',()=>{this.setState(MouseState.SELECT)}  );
-
-        let buttonMove = document.createElement("Button")
-        buttonMove.innerText = "Move"
-        buttonMove.addEventListener( 'click',()=>{this.setState(MouseState.MOVE)}  );
-
-        let buttonZoomIn = document.createElement("Button")
-        buttonZoomIn.innerText = "+"
-        buttonZoomIn.addEventListener( 'click',()=>{this.drawBoard.zoom(1.2)}  );
-
-        let buttonZoomOut = document.createElement("Button")
-        buttonZoomOut.innerText = "-"
-        buttonZoomOut.addEventListener( 'click',()=>{this.drawBoard.zoom(1/1.2)}  );
-
-        menudiv.appendChild( buttonMove );
-        menudiv.appendChild( buttonZoomIn );
-        menudiv.appendChild( buttonZoomOut );
-
-        menudiv.appendChild( buttonClear );
-        menudiv.appendChild( buttonPoint );
-        menudiv.appendChild( buttonLine );
-        menudiv.appendChild( circleGroup );
-        menudiv.appendChild( measureGroup );
-        menudiv.appendChild( buttonESC );
-        menudiv.appendChild( buttonSelect );
-
-        parentDiv.appendChild(menudiv)
-        
-
-    }
-
 
 }

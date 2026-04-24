@@ -31,6 +31,11 @@ export class Point extends BaseShape {
         return Math.sqrt(x_ * x_ + y_ * y_);
     }
 
+    checkInsideArea(minX, minY, maxX, maxY, requireComplete) {
+        let camPos = this.vec4.mulMatrix(this.camera.getCalcMatrix());
+        return camPos.x >= minX && camPos.x <= maxX && camPos.y >= minY && camPos.y <= maxY;
+    }
+
     /** Ask the PropertyEditor to render this shape's specific properties */
     buildProperties(editor) {
         editor.buildPointFields(this, "Position");
