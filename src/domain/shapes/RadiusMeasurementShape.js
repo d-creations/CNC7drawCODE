@@ -91,7 +91,7 @@ export class RadiusMeasurementShape extends BaseMeasurementShape {
         let d = num / screenLen;
 
         let dotProduct = ((x - centerCam.x) * (lx - centerCam.x) + (y - centerCam.y) * (ly - centerCam.y)) / screenLen;
-        if (dotProduct < 0 || dotProduct > screenLen) {
+        if (dotProduct < -20 || dotProduct > screenLen + 20) {
             return Infinity;
         }
 

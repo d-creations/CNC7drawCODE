@@ -121,6 +121,8 @@ export class ConstraintSystem {
                     isDependent = true;
                 } else if (otherGeo.type === "Circle" && otherGeo.data.center === currentId) {
                     isDependent = true;
+                } else if (otherGeo.type === "Arc" && otherGeo.data.center === currentId) {
+                    isDependent = true;
                 } else if (otherGeo.type === "AngleMeasurement" && (otherGeo.data.l1Id === currentId || otherGeo.data.l2Id === currentId)) {
                     isDependent = true;
                 }

@@ -6,6 +6,7 @@ export class BaseMeasurementShape extends BaseShape {
     constructor(ctx, camera) {
         super(ctx, camera);
         this.color = "purple"; // default measurement color
+        this.defaultColor = "purple";
         this.isMeasurement = true; // flag to differentiate from geometry
     }
 

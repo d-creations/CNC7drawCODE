@@ -3,10 +3,14 @@ import { stickFont } from "./LetterDrawer.js"
 import { AppConfig } from "./Config.js"
 import { ConstraintSystem } from "./constraints/ConstraintSystem.js"
 import { LocalSketchStorage } from "./storage/LocalSketchStorage.js"
+import { HistoryManager } from "./storage/HistoryManager.js"
 import { Point } from "./shapes/Point.js"
 import { DrawLine } from "./shapes/DrawLine.js"
 import { DrawCircle } from "./shapes/DrawCircle.js"
+import { DrawArc } from "./shapes/DrawArc.js"
 import { LengthMeasurementShape } from "./shapes/LengthMeasurementShape.js"
+import { HorizontalMeasurementShape } from "./shapes/HorizontalMeasurementShape.js"
+import { VerticalMeasurementShape } from "./shapes/VerticalMeasurementShape.js"
 import { AngleMeasurementShape } from "./shapes/AngleMeasurementShape.js"
 import { RadiusMeasurementShape } from "./shapes/RadiusMeasurementShape.js"
 import { ClipboardManager } from "./ClipboardManager.js"
@@ -41,7 +45,9 @@ export class DrawBoard{
         this.cursorPos = { x: 0, y: 0 }
         
         this.constraintSystem = new ConstraintSystem()
-        this.storage = new LocalSketchStorage()
+        const localStorageLayer = new LocalSketchStorage()
+        this.historyManager = new HistoryManager(localStorageLayer)
+        this.storage = this.historyManager
         this.clipboardManager = new ClipboardManager(this)
         
         // Auto-load state if the browser has cached shapes
@@ -118,49 +124,96 @@ export class DrawBoard{
         }
         return selectedobj;
     }
-    selectObject(x,y){
-        
-        let previousHoverObj = this.hoverObj;
-        this.hoverObj = null;
-        let selectedobj = {
-            dist : 9999,
-            obj : null
-        }
+    hoverObject(x, y) {
+        let bestDist = 9999;
+        let bestObj = null;
         for(let mainObj of this.drawObjects){
-            mainObj.changeColor("red") // Reset main object color
-            
             let objectsToCheck = [mainObj];
             if (typeof mainObj.getSubObjects === 'function') {
                 objectsToCheck = objectsToCheck.concat(mainObj.getSubObjects());
             }
 
             for(let obj of objectsToCheck){
-                if (obj !== mainObj && typeof obj.changeColor === 'function') {
-                    // Note: Sub-objects like Tangent points override their color in draw(), 
-                    // but we can reset them here just in case.
-                    obj.changeColor("blue"); // Wait wait... keeping the original intact
+                let dist = obj.check(x,y)
+                if(dist < this.selectDistLampda && dist < bestDist){
+                    bestObj = obj;
+                    bestDist = dist;
                 }
+            }
+        }
+
+        // Apply colors
+        for(let mainObj of this.drawObjects){
+            let isSelected = this.selectedObjects && this.selectedObjects.includes(mainObj);
+            if(isSelected){
+                mainObj.changeColor("green");
+            } else if(mainObj === bestObj){
+                mainObj.changeColor("green"); // highlight on hover
+            } else {
+                mainObj.changeColor(mainObj.defaultColor || "red");
+            }
+            
+            let objectsToCheck = [];
+            if (typeof mainObj.getSubObjects === 'function') {
+                objectsToCheck = mainObj.getSubObjects();
+            }
+
+            for(let obj of objectsToCheck){
+                let isSubSelected = this.selectedObjects && this.selectedObjects.includes(obj);
+                if(isSubSelected) {
+                    if (typeof obj.changeColor === 'function') obj.changeColor("green");
+                } else if(obj === bestObj){
+                    if (typeof obj.changeColor === 'function') obj.changeColor("green"); // highlight on hover
+                } else {
+                    if (typeof obj.changeColor === 'function') obj.changeColor(obj.defaultColor || "blue");
+                }
+            }
+        }
+        this.draw();
+    }
+
+    selectObject(x,y){
+        let selectedobj = {
+            dist : 9999,
+            obj : null
+        }
+        for(let mainObj of this.drawObjects){
+            let objectsToCheck = [mainObj];
+            if (typeof mainObj.getSubObjects === 'function') {
+                objectsToCheck = objectsToCheck.concat(mainObj.getSubObjects());
+            }
+
+            for(let obj of objectsToCheck){
                 let dist = obj.check(x,y)
                 if(dist < this.selectDistLampda){
                     if(selectedobj.dist > dist){
                         selectedobj.obj = obj
-                        selectedobj.exist = true
                         selectedobj.dist = dist
                     }
                 }
             }
         }
-        if(selectedobj.dist < this.selectDistLampda){
-            // Color for the selected/hovered object
-            selectedobj.obj.changeColor("green")
-            this.hoverObj = selectedobj.obj;
-        }
         
-        if (this.onSelectionChanged && previousHoverObj !== this.hoverObj) {
-            this.onSelectionChanged(this.hoverObj);
+        let previousSelected = this.selectedObjects ? [...this.selectedObjects] : [];
+
+        if(selectedobj.dist < this.selectDistLampda){
+            this.selectedObjects = [selectedobj.obj];
+        } else {
+            this.selectedObjects = [];
         }
 
-        this.draw()
+        let displayObj = null;
+        if (this.selectedObjects.length === 1) {
+            displayObj = this.selectedObjects[0];
+        } else if (this.selectedObjects.length > 1) {
+            displayObj = this.selectedObjects;
+        }
+
+        if (this.onSelectionChanged) {
+            this.onSelectionChanged(displayObj);
+        }
+
+        this.hoverObject(x, y); // update colors
     }
 
     selectObjectsInArea(startX, startY, endX, endY, previewOnly = false) {
@@ -173,7 +226,7 @@ export class DrawBoard{
         let selected = [];
         
         for (let obj of this.drawObjects) {
-            obj.changeColor("red"); // Reset
+            obj.changeColor(obj.defaultColor || "red"); // Reset
             
             if (obj.checkInsideArea && obj.checkInsideArea(minX, minY, maxX, maxY, requireComplete)) {
                 obj.changeColor("green");
@@ -209,6 +262,28 @@ export class DrawBoard{
 
     insertClipboard() {
         this.clipboardManager.insertClipboard();
+    }
+
+    undo() {
+        let state = this.historyManager.undo();
+        if (state) {
+            this.drawObjects = [];
+            this.clearTempObjects();
+            this.constraintSystem.load({ geometries: [], constraints: [] }); // wipe physics
+            this.loadState();
+            this.draw();
+        }
+    }
+
+    redo() {
+        let state = this.historyManager.redo();
+        if (state) {
+            this.drawObjects = [];
+            this.clearTempObjects();
+            this.constraintSystem.load({ geometries: [], constraints: [] }); // wipe physics
+            this.loadState();
+            this.draw();
+        }
     }
 
     drawLine(startObject,endObject){
@@ -271,7 +346,7 @@ export class DrawBoard{
 
     loadState() {
         const storedData = this.storage.load();
-        if (!storedData || !storedData.geometries || storedData.geometries.length === 0) return;
+        if (!storedData || !storedData.geometries) return;
 
         this.constraintSystem.load(storedData);
         let uiMap = new Map(); // Links JSON IDs to Visual objects
@@ -303,6 +378,13 @@ export class DrawBoard{
                     cObj.constraintId = geo.id;
                     this.drawObjects.push(cObj);
                 }
+            } else if (geo.type === "Arc") {
+                let centerPoint = uiMap.get(geo.data.center);
+                if (centerPoint) {
+                    let aObj = new DrawArc(this.context, this.camera, centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle);
+                    aObj.constraintId = geo.id;
+                    this.drawObjects.push(aObj);
+                }
             } else if (geo.type === "LengthMeasurement") {
                 let p1 = this.drawObjects.find(o => o.constraintId === geo.data.p1Id) || geo.data.p1;
                 let p2 = this.drawObjects.find(o => o.constraintId === geo.data.p2Id) || geo.data.p2;
@@ -311,6 +393,24 @@ export class DrawBoard{
                     LM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) LM.offset = geo.data.offset;
                     this.drawObjects.push(LM);
+                }
+            } else if (geo.type === "HorizontalMeasurement") {
+                let p1 = this.drawObjects.find(o => o.constraintId === geo.data.p1Id) || geo.data.p1;
+                let p2 = this.drawObjects.find(o => o.constraintId === geo.data.p2Id) || geo.data.p2;
+                if (p1 && p2) {
+                    let HM = new HorizontalMeasurementShape(this, p1, p2);
+                    HM.constraintId = geo.id;
+                    if (geo.data.offset !== undefined) HM.offset = geo.data.offset;
+                    this.drawObjects.push(HM);
+                }
+            } else if (geo.type === "VerticalMeasurement") {
+                let p1 = this.drawObjects.find(o => o.constraintId === geo.data.p1Id) || geo.data.p1;
+                let p2 = this.drawObjects.find(o => o.constraintId === geo.data.p2Id) || geo.data.p2;
+                if (p1 && p2) {
+                    let VM = new VerticalMeasurementShape(this, p1, p2);
+                    VM.constraintId = geo.id;
+                    if (geo.data.offset !== undefined) VM.offset = geo.data.offset;
+                    this.drawObjects.push(VM);
                 }
             } else if (geo.type === "AngleMeasurement") {
                 // Try to find the lines in drawObjects
@@ -354,6 +454,16 @@ export class DrawBoard{
                                 obj.centerPoint.vec4.y = centerData.y;
                             }
                             obj.radius = geoData.r;
+                        }
+                        else if (obj.constructor.name === "DrawArc") {
+                            let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
+                            if (centerData) {
+                                obj.centerPoint.vec4.x = centerData.x;
+                                obj.centerPoint.vec4.y = centerData.y;
+                            }
+                            obj.radius = geoData.r;
+                            obj.startAngle = geoData.startAngle;
+                            obj.endAngle = geoData.endAngle;
                         }
                         else if (obj.constructor.name === "DrawLine") {
                             let startData = this.constraintSystem.geometries.get(geoData.start)?.data;

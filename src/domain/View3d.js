@@ -38,11 +38,12 @@ SOFTWARE.
 
 
 
-import { MouseControl } from "./MouseControl.js";
+import { MouseControl, MouseState } from "./MouseControl.js";
 import { DrawBoard } from "./DrawBoard.js";
 import { Camera } from "./Camera.js";
 import { PropertyEditor } from "./PropertyEditor.js";
 import { CommandPanel } from "./CommandPanel.js";
+import { KeyboardManager } from "./KeyboardManager.js";
 
 
 
@@ -59,9 +60,13 @@ export class View3D{
        let position = {};
        position.x = e.offsetX;
        position.y = e.offsetY;
+       position.button = e.button;
        return position;
      }
     constructor(parentDiv) {
+        var DView = parentDiv.appendChild(document.createElement("div"));
+        DView.id = "DView_Menu";
+
         let container = parentDiv.appendChild(document.createElement("canvas"))
         container.classList.add("container")
         container.id ='container';
@@ -70,9 +75,6 @@ export class View3D{
         container.style.height = "800px" // Ensure CSS size is constrained correctly
         container.style.width = "800px"
         container.style.backgroundColor = "whitesmoke"
-
-        var DView = parentDiv.appendChild(document.createElement("div"));
-        DView.id = "DView_Menu";
 
         
         let camera = new Camera()
@@ -84,15 +86,22 @@ export class View3D{
         this.drawBoard = new DrawBoard(container,camera)
         this.mousecontrol = new MouseControl(DView,this.drawBoard)
         this.commandPanel = new CommandPanel(parentDiv, this.mousecontrol);
+        this.keyboardManager = new KeyboardManager(this.mousecontrol, this.drawBoard);
 
         let barDiv = document.getElementById("bar");
         this.propertyEditor = new PropertyEditor(parentDiv, this.drawBoard);
         this.drawBoard.onSelectionChanged = (obj) => {
-            this.propertyEditor.setObject(obj);
+            if (this.mousecontrol && this.mousecontrol.buttonState !== MouseState.SELECT) {
+                // If we are not in SELECT mode, do not show properties on hover.
+                this.propertyEditor.setObject(null);
+            } else {
+                this.propertyEditor.setObject(obj);
+            }
         }
 
         let that = this
         this.container = container
+        container.addEventListener( 'contextmenu',(e)=>{ e.preventDefault(); }  );
         container.addEventListener( 'click',(e)=>{that.mousecontrol.mouseClicked(that.getPosition(e))}  );
         container.addEventListener( 'mousedown',(e)=>{that.mousecontrol.mouseDown(that.getPosition(e))}  );
         container.addEventListener( 'mouseup',(e)=>{that.mousecontrol.mouseUp(that.getPosition(e))}  );

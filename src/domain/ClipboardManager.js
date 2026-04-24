@@ -2,6 +2,7 @@ import { Vec4 } from "./Camera.js";
 import { Point } from "./shapes/Point.js";
 import { DrawLine } from "./shapes/DrawLine.js";
 import { DrawCircle } from "./shapes/DrawCircle.js";
+import { DrawArc } from "./shapes/DrawArc.js";
 
 export class ClipboardManager {
     constructor(drawBoard) {
@@ -37,6 +38,9 @@ export class ClipboardManager {
                 if (p1 && !this.clipboard.find(c => c.id === p1.id)) this.clipboard.push(JSON.parse(JSON.stringify(p1)));
                 if (p2 && !this.clipboard.find(c => c.id === p2.id)) this.clipboard.push(JSON.parse(JSON.stringify(p2)));
             } else if (cutDef.type === "Circle") {
+                let pC = exportedGeometries.find(g => g.id === cutDef.data.center);
+                if (pC && !this.clipboard.find(c => c.id === pC.id)) this.clipboard.push(JSON.parse(JSON.stringify(pC)));
+            } else if (cutDef.type === "Arc") {
                 let pC = exportedGeometries.find(g => g.id === cutDef.data.center);
                 if (pC && !this.clipboard.find(c => c.id === pC.id)) this.clipboard.push(JSON.parse(JSON.stringify(pC)));
             }
@@ -102,6 +106,15 @@ export class ClipboardManager {
                         fixed: c.fixed
                     });
                 }
+            } else if (c.type === "Arc") {
+                let nCenter = idMapping[c.data.center];
+                if (nCenter) {
+                    this.drawBoard.constraintSystem.addGeometry({
+                        type: "Arc",
+                        data: { center: nCenter, r: c.data.r, startAngle: c.data.startAngle, endAngle: c.data.endAngle },
+                        fixed: c.fixed
+                    });
+                }
             }
         }
         
@@ -163,6 +176,14 @@ export class ClipboardManager {
                     circ.id = getPreviewId();
                     circ.highlighted = true;
                     previewGeoms.push(circ);
+                }
+            } else if (c.type === "Arc") {
+                let pc = previewIdMap[c.data.center];
+                if (pc) {
+                    let arc = new DrawArc(this.drawBoard.context, this.drawBoard.camera, pc.geom, c.data.r, c.data.startAngle, c.data.endAngle);
+                    arc.id = getPreviewId();
+                    arc.highlighted = true;
+                    previewGeoms.push(arc);
                 }
             }
         }

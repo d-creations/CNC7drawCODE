@@ -15,6 +15,7 @@ export class BaseShape {
         this.ctx = ctx;
         this.camera = camera;
         this.color = "red"; // Default normal state color
+        this.defaultColor = "red";
     }
 
     /** 
@@ -73,8 +74,12 @@ export class BaseShape {
     }
 
     /** Standard inherited method allowing the Selection tool to flag objects Green */
-    changeColor(color) {
+    changeColor(color, isPermanent = false) {
         this.color = color;
+        if (isPermanent || color === "red" || color === "purple" || color.match(/^#/)) {
+            // Note: This heuristic assumes "#..." hex might be from property editor but
+            // usually it is better to explicit set defaultColor manually in PropertyEditor.
+        }
     }
 
     /** Helper method down to resolve canvas snapping points or create raw ones */

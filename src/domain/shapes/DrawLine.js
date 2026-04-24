@@ -26,22 +26,26 @@ export class DrawLine extends BaseShape {
         let startCam = this.startPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
         let endCam = this.endpoint.vec4.mulMatrix(this.camera.getCalcMatrix());
         
-        let xV_ = endCam.x - startCam.x;
-        let yV_ = endCam.y - startCam.y;
-        let x2 = x - startCam.x;
-        let y2 = y - startCam.y;
+        let dx = endCam.x - startCam.x;
+        let dy = endCam.y - startCam.y;
         
-        let SkalarPS = (xV_ * x2 + yV_ * y2) / (Math.sqrt(xV_ * xV_ + yV_ * yV_) * Math.sqrt(x2 * x2 + y2 * y2)) || 0;
-        let distanceP = (xV_ * y2 - yV_ * x2) / Math.sqrt(xV_ * xV_ + yV_ * yV_) || 0;
-        
-        x2 = x - endCam.x;
-        y2 = y - endCam.y;
-        let SkalarPE = (-xV_ * x2 - yV_ * y2) / (Math.sqrt(xV_ * xV_ + yV_ * yV_) * Math.sqrt(x2 * x2 + y2 * y2)) || 0;
-        
-        if (SkalarPE < 0 || SkalarPS < 0) {
-            distanceP = 99999;
+        let len2 = dx * dx + dy * dy;
+        if (len2 === 0) {
+            let distX = x - startCam.x;
+            let distY = y - startCam.y;
+            return Math.sqrt(distX * distX + distY * distY);
         }
-        return Math.abs(distanceP);
+        
+        let t = ((x - startCam.x) * dx + (y - startCam.y) * dy) / len2;
+        t = Math.max(0, Math.min(1, t)); // constrain to the line segment
+
+        let closestX = startCam.x + t * dx;
+        let closestY = startCam.y + t * dy;
+
+        let distX = x - closestX;
+        let distY = y - closestY;
+
+        return Math.sqrt(distX * distX + distY * distY);
     }
 
     checkInsideArea(minX, minY, maxX, maxY, requireComplete) {

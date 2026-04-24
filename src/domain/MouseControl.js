@@ -6,14 +6,18 @@ import { Circle3PTool } from "./tools/Circle3PTool.js";
 import { Circle3TTool } from "./tools/Circle3TTool.js";
 import { Circle2T1RTool } from "./tools/Circle2T1RTool.js";
 import { LengthMeasurementTool } from "./tools/LengthMeasurementTool.js";
+import { HorizontalMeasurementTool } from "./tools/HorizontalMeasurementTool.js";
+import { VerticalMeasurementTool } from "./tools/VerticalMeasurementTool.js";
 import { AngleMeasurementTool } from "./tools/AngleMeasurementTool.js";
 import { RadiusMeasurementTool } from "./tools/RadiusMeasurementTool.js";
+import { ArcCenterTool } from "./tools/ArcCenterTool.js";
+import { Arc3PTool } from "./tools/Arc3PTool.js";
 import { DrawLine } from "./shapes/DrawLine.js";
 import { DrawCircle } from "./shapes/DrawCircle.js";
 import { Point } from "./shapes/Point.js";
 import { Vec4 } from "./Camera.js";
 
-export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13 };
+export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17 };
 
 export class MouseControl{
 
@@ -30,11 +34,13 @@ export class MouseControl{
     circle3TTool
     circle2T1RTool
     lengthMeasurementTool
+    horizontalMeasurementTool
+    verticalMeasurementTool
     angleMeasurementTool
     radiusMeasurementTool
 
     constructor(parentDiv,drawBoard){
-        this.buttonState = MouseState.NONE
+        this.buttonState = MouseState.SELECT
         this.drawBoard = drawBoard
         
         // Instantiate tools with reference to the constraint system
@@ -44,8 +50,12 @@ export class MouseControl{
         this.circle3TTool = new Circle3TTool(drawBoard, drawBoard.constraintSystem);
         this.circle2T1RTool = new Circle2T1RTool(drawBoard, drawBoard.constraintSystem);
         this.lengthMeasurementTool = new LengthMeasurementTool(drawBoard, drawBoard.constraintSystem);
+        this.horizontalMeasurementTool = new HorizontalMeasurementTool(drawBoard, drawBoard.constraintSystem);
+        this.verticalMeasurementTool = new VerticalMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.angleMeasurementTool = new AngleMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.radiusMeasurementTool = new RadiusMeasurementTool(drawBoard, drawBoard.constraintSystem);
+        this.arcCenterTool = new ArcCenterTool(drawBoard, drawBoard.constraintSystem);
+        this.arc3PTool = new Arc3PTool(drawBoard, drawBoard.constraintSystem);
 
         this.mousePressed = false
         this.tempPoints = [];
@@ -58,6 +68,23 @@ export class MouseControl{
         this.buttonState = newState;
         this.tempPoints = [];
         this.tempLines = [];
+
+    // Clear any selection when switching tools so PropertyEditor hides and items deselect
+    if (this.drawBoard) {
+        if (this.drawBoard.hoverObj) {
+            let objs = Array.isArray(this.drawBoard.hoverObj) ? this.drawBoard.hoverObj : [this.drawBoard.hoverObj];
+            for (let obj of objs) {
+                if (obj && obj.changeColor) obj.changeColor("red");
+            }
+        }
+        this.drawBoard.hoverObj = null;
+        this.drawBoard.selectedObjects = [];
+        if (this.drawBoard.onSelectionChanged) {
+            this.drawBoard.onSelectionChanged(null);
+        }
+        this.drawBoard.draw();
+    }
+
         if (this.onStateChange) this.onStateChange();
     }
 
@@ -71,6 +98,12 @@ export class MouseControl{
             y : position.y
         }
         
+        // Handle explicit Right click to move functionality dynamically across tools 
+        if (position.button === 2) {
+            this.preRightClickState = this.buttonState;
+            this.buttonState = MouseState.MOVE;
+        }
+
         if(this.buttonState == MouseState.SELECT){
             this.drawBoard.selectObject(position.x,position.y)
         }
@@ -183,15 +216,27 @@ export class MouseControl{
             if (this.buttonState === MouseState.MEASURE_LENGTH) {
                 this.lengthMeasurementTool.onMouseMove(position.x, position.y);
             }
+            if (this.buttonState === MouseState.MEASURE_HORIZONTAL) {
+                this.horizontalMeasurementTool.onMouseMove(position.x, position.y);
+            }
+            if (this.buttonState === MouseState.MEASURE_VERTICAL) {
+                this.verticalMeasurementTool.onMouseMove(position.x, position.y);
+            }
             if (this.buttonState === MouseState.MEASURE_ANGLE) {
                 this.angleMeasurementTool.onMouseMove(position.x, position.y);
             }
             if (this.buttonState === MouseState.MEASURE_RADIUS) {
                 this.radiusMeasurementTool.onMouseMove(position.x, position.y);
             }
+            if (this.buttonState === MouseState.ARC) {
+                this.arcCenterTool.onMouseMove(position);
+            }
+            if (this.buttonState === MouseState.ARC_3P) {
+                this.arc3PTool.onMouseMove(position);
+            }
             // Give hover hint when not holding mouse down for drawing tools
-            if ([MouseState.LINE, MouseState.CIRCLE, MouseState.CIRCLE_3P, MouseState.POINT, MouseState.CIRCLE_3T, MouseState.CIRCLE_2T1R, MouseState.MEASURE_ANGLE, MouseState.MEASURE_LENGTH, MouseState.MEASURE_RADIUS].includes(this.buttonState)) {
-                this.drawBoard.selectObject(position.x, position.y);
+            if ([MouseState.SELECT, MouseState.LINE, MouseState.CIRCLE, MouseState.CIRCLE_3P, MouseState.POINT, MouseState.CIRCLE_3T, MouseState.CIRCLE_2T1R, MouseState.MEASURE_ANGLE, MouseState.MEASURE_LENGTH, MouseState.MEASURE_HORIZONTAL, MouseState.MEASURE_VERTICAL, MouseState.MEASURE_RADIUS, MouseState.ARC, MouseState.ARC_3P].includes(this.buttonState)) {
+                this.drawBoard.hoverObject(position.x, position.y);
             }
             // Draw anyway so the mouse tracker cursor coordinates update
             this.drawBoard.draw();
@@ -239,6 +284,14 @@ export class MouseControl{
             this.lengthMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
         }
+        else if (this.buttonState == MouseState.MEASURE_HORIZONTAL) {
+            this.horizontalMeasurementTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+        else if (this.buttonState == MouseState.MEASURE_VERTICAL) {
+            this.verticalMeasurementTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
         else if (this.buttonState == MouseState.MEASURE_ANGLE) {
             this.angleMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
@@ -247,7 +300,15 @@ export class MouseControl{
             this.radiusMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
         }
-        
+        else if (this.buttonState == MouseState.ARC) {
+            this.arcCenterTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+        else if (this.buttonState == MouseState.ARC_3P) {
+            this.arc3PTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+
         // Auto-save memory on click actions
         this.drawBoard.saveState();
     }
@@ -277,6 +338,12 @@ export class MouseControl{
         }
 
         this.drawBoard.clearTempObjects(); // Clean out previews
+        
+        if(this.buttonState === MouseState.MOVE && this.preRightClickState !== undefined) {
+            this.buttonState = this.preRightClickState;
+            this.preRightClickState = undefined;
+            return;
+        }
         
         // Finalize standard creation
         if(this.buttonState === MouseState.PASTE) {

@@ -152,6 +152,7 @@ export class PropertyEditor {
             const currentVal = e.target.value;
             if (currentVal !== lastAppliedColor) {
                 lastAppliedColor = currentVal;
+                activeObj.defaultColor = currentVal; // save to default color
                 activeObj.changeColor(currentVal);
                 this.drawBoard.draw();
             }

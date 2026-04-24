@@ -23,6 +23,7 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
             if (geo.fixed) continue;
             if (geo.type === "Point") dof += 2;
             if (geo.type === "Circle") dof += 1; // Radius
+            if (geo.type === "Arc") dof += 3; // r, startAngle, endAngle
         }
 
         // Remove DOF for constraints
@@ -105,6 +106,10 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
                 stateMap.push({ obj: geo, prop: "y" }); state.push(geo.data.y); weights.push(weight);
             } else if (geo.type === "Circle") {
                 stateMap.push({ obj: geo, prop: "r" }); state.push(geo.data.r); weights.push(weight);
+            } else if (geo.type === "Arc") {
+                stateMap.push({ obj: geo, prop: "r" }); state.push(geo.data.r); weights.push(weight);
+                stateMap.push({ obj: geo, prop: "startAngle" }); state.push(geo.data.startAngle); weights.push(weight);
+                stateMap.push({ obj: geo, prop: "endAngle" }); state.push(geo.data.endAngle); weights.push(weight);
             }
         }
         return { state, stateMap, weights };

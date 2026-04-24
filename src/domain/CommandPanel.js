@@ -1,4 +1,5 @@
 import { MouseState } from "./MouseControl.js";
+import { ActionTypes, globalCommandRegistry } from "./CommandRegistry.js";
 
 export class CommandPanel {
     constructor(parentDiv, mouseControl) {
@@ -30,47 +31,68 @@ export class CommandPanel {
         let menudiv = document.createElement("div");
         menudiv.className = "toolbar-menu";
         
+        const getLabel = (actionType) => {
+            const cmd = globalCommandRegistry.getCommand(actionType);
+            return `${cmd.label} [${cmd.hotkey}]`;
+        };
+
         let buttonClear = document.createElement("Button");
-        buttonClear.innerText = "Clear";
+        buttonClear.innerText = getLabel(ActionTypes.CLEAR);
         buttonClear.addEventListener('click', () => {
             this.mouseControl.setState(MouseState.NONE);
             this.mouseControl.drawBoard.clearAll();
         });
 
         let buttonPoint = document.createElement("Button");
-        buttonPoint.innerText = "Point";
+        buttonPoint.innerText = getLabel(ActionTypes.POINT);
         buttonPoint.addEventListener('click', () => { this.mouseControl.setState(MouseState.POINT); });
 
         let buttonLine = document.createElement("Button");
-        buttonLine.innerText = "Line";
+        buttonLine.innerText = getLabel(ActionTypes.LINE);
         buttonLine.addEventListener('click', () => { this.mouseControl.setState(MouseState.LINE); });
         
         let buttonCircle = document.createElement("Button");
-        buttonCircle.innerText = "Circle (C+R)";
+        buttonCircle.innerText = getLabel(ActionTypes.CIRCLE);
         buttonCircle.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE); });
 
         let buttonCircle3P = document.createElement("Button");
-        buttonCircle3P.innerText = "Circle (3P)";
+        buttonCircle3P.innerText = getLabel(ActionTypes.CIRCLE_3P);
         buttonCircle3P.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_3P); });
 
         let buttonCircle2TR = document.createElement("Button");
-        buttonCircle2TR.innerText = "Circle (2T, 1R)";
+        buttonCircle2TR.innerText = getLabel(ActionTypes.CIRCLE_2T1R);
         buttonCircle2TR.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_2T1R); });
 
         let buttonCircle3T = document.createElement("Button");
-        buttonCircle3T.innerText = "Circle (3T)";
+        buttonCircle3T.innerText = getLabel(ActionTypes.CIRCLE_3T);
         buttonCircle3T.addEventListener('click', () => { this.mouseControl.setState(MouseState.CIRCLE_3T); });
 
+        let buttonArc = document.createElement("Button");
+        buttonArc.innerText = getLabel(ActionTypes.ARC);
+        buttonArc.addEventListener('click', () => { this.mouseControl.setState(MouseState.ARC); });
+
+        let buttonArc3P = document.createElement("Button");
+        buttonArc3P.innerText = getLabel(ActionTypes.ARC_3P);
+        buttonArc3P.addEventListener('click', () => { this.mouseControl.setState(MouseState.ARC_3P); });
+
         let buttonMeasureLength = document.createElement("Button");
-        buttonMeasureLength.innerText = "Measure Length";
+        buttonMeasureLength.innerText = getLabel(ActionTypes.MEASURE_LENGTH);
         buttonMeasureLength.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_LENGTH); });
 
+        let buttonMeasureHorizontal = document.createElement("Button");
+        buttonMeasureHorizontal.innerText = getLabel(ActionTypes.MEASURE_HORIZONTAL);
+        buttonMeasureHorizontal.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_HORIZONTAL); });
+
+        let buttonMeasureVertical = document.createElement("Button");
+        buttonMeasureVertical.innerText = getLabel(ActionTypes.MEASURE_VERTICAL);
+        buttonMeasureVertical.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_VERTICAL); });
+
         let buttonMeasureAngle = document.createElement("Button");
-        buttonMeasureAngle.innerText = "Measure Angle";
+        buttonMeasureAngle.innerText = getLabel(ActionTypes.MEASURE_ANGLE);
         buttonMeasureAngle.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_ANGLE); });
 
         let buttonMeasureRadius = document.createElement("Button");
-        buttonMeasureRadius.innerText = "Measure Radius";
+        buttonMeasureRadius.innerText = getLabel(ActionTypes.MEASURE_RADIUS);
         buttonMeasureRadius.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_RADIUS); });
 
         let circleGroup = document.createElement("div");
@@ -86,6 +108,8 @@ export class CommandPanel {
         circleGroup.appendChild(buttonCircle3P);
         circleGroup.appendChild(buttonCircle2TR);
         circleGroup.appendChild(buttonCircle3T);
+        circleGroup.appendChild(buttonArc);
+        circleGroup.appendChild(buttonArc3P);
 
         let measureGroup = document.createElement("div");
         measureGroup.style.border = "1px solid #ccc";
@@ -97,23 +121,25 @@ export class CommandPanel {
         measureGroup.style.fontSize = "12px";
 
         measureGroup.appendChild(buttonMeasureLength);
+        measureGroup.appendChild(buttonMeasureHorizontal);
+        measureGroup.appendChild(buttonMeasureVertical);
         measureGroup.appendChild(buttonMeasureAngle);
         measureGroup.appendChild(buttonMeasureRadius);
 
         let buttonESC = document.createElement("Button");
-        buttonESC.innerText = "ESC";
-        buttonESC.addEventListener('click', () => { this.mouseControl.setState(MouseState.NONE); });
+        buttonESC.innerText = getLabel(ActionTypes.ESCAPE);
+        buttonESC.addEventListener('click', () => { this.mouseControl.setState(MouseState.SELECT); });
 
         let buttonSelect = document.createElement("Button");
-        buttonSelect.innerText = "Select";
+        buttonSelect.innerText = getLabel(ActionTypes.SELECT);
         buttonSelect.addEventListener('click', () => { this.mouseControl.setState(MouseState.SELECT); });
 
         let buttonMove = document.createElement("Button");
-        buttonMove.innerText = "Move";
+        buttonMove.innerText = getLabel(ActionTypes.MOVE);
         buttonMove.addEventListener('click', () => { this.mouseControl.setState(MouseState.MOVE); });
 
         let buttonPaste = document.createElement("Button");
-        buttonPaste.innerText = "Paste";
+        buttonPaste.innerText = getLabel(ActionTypes.PASTE);
         buttonPaste.style.backgroundColor = "#ff9800";
         buttonPaste.style.color = "white";
         buttonPaste.style.border = "none";
@@ -123,16 +149,26 @@ export class CommandPanel {
             this.mouseControl.setState(MouseState.PASTE);
         });
 
+        let buttonUndo = document.createElement("Button");
+        buttonUndo.innerText = getLabel(ActionTypes.UNDO);
+        buttonUndo.addEventListener('click', () => { this.mouseControl.drawBoard.undo(); });
+
+        let buttonRedo = document.createElement("Button");
+        buttonRedo.innerText = getLabel(ActionTypes.REDO);
+        buttonRedo.addEventListener('click', () => { this.mouseControl.drawBoard.redo(); });
+
         let buttonZoomIn = document.createElement("Button");
-        buttonZoomIn.innerText = "+";
+        buttonZoomIn.innerText = getLabel(ActionTypes.ZOOM_IN);
         buttonZoomIn.addEventListener('click', () => { this.mouseControl.drawBoard.zoom(1.2); });
 
         let buttonZoomOut = document.createElement("Button");
-        buttonZoomOut.innerText = "-";
+        buttonZoomOut.innerText = getLabel(ActionTypes.ZOOM_OUT);
         buttonZoomOut.addEventListener('click', () => { this.mouseControl.drawBoard.zoom(1/1.2); });
 
         menudiv.appendChild(buttonMove);
         menudiv.appendChild(buttonPaste);
+        menudiv.appendChild(buttonUndo);
+        menudiv.appendChild(buttonRedo);
         menudiv.appendChild(buttonZoomIn);
         menudiv.appendChild(buttonZoomOut);
 
@@ -144,7 +180,12 @@ export class CommandPanel {
         menudiv.appendChild(buttonESC);
         menudiv.appendChild(buttonSelect);
 
-        parentDiv.appendChild(menudiv);
+        let dview = document.getElementById("DView_Menu");
+        if (dview) {
+            dview.appendChild(menudiv);
+        } else {
+            parentDiv.appendChild(menudiv);
+        }
     }
 
     render() {
@@ -180,6 +221,18 @@ export class CommandPanel {
         } else if (state === MouseState.CIRCLE) {
             title.innerText = "Tool: Circle (Center + Radius)";
             instruction.innerText = "Click and drag to define center and radius.";
+        } else if (state === MouseState.ARC) {
+            title.innerText = "Tool: Arc (Center + Start + End)";
+            let step = this.mouseControl.arcCenterTool.step;
+            if (step === "placeCenter") instruction.innerText = "Step 1/3: Click to place Arc Center.";
+            else if (step === "placeStart") instruction.innerText = "Step 2/3: Click to place Start Point / Radius.";
+            else if (step === "placeEnd") instruction.innerText = "Step 3/3: Click to define End Angle.";
+        } else if (state === MouseState.ARC_3P) {
+            title.innerText = "Tool: 3-Point Arc";
+            let step = this.mouseControl.arc3PTool.step;
+            if (step === "placeStart") instruction.innerText = "Step 1/3: Click to place Start Point.";
+            else if (step === "placeEnd") instruction.innerText = "Step 2/3: Click to place End Point.";
+            else if (step === "placeRadius") instruction.innerText = "Step 3/3: Move mouse to define Arc Curvature and click.";
         } else if (state === MouseState.CIRCLE_3P) {
             title.innerText = "Tool: 3-Point Circle";
             let pts = this.mouseControl.circle3PTool.selectedPoints.length;
@@ -189,6 +242,16 @@ export class CommandPanel {
         } else if (state === MouseState.MEASURE_LENGTH) {
             title.innerText = "Tool: Measure Length";
             let step = this.mouseControl.lengthMeasurementTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
+            else instruction.innerText = "Step 2/2: Select end point";
+        } else if (state === MouseState.MEASURE_HORIZONTAL) {
+            title.innerText = "Tool: Measure Horizontal";
+            let step = this.mouseControl.horizontalMeasurementTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
+            else instruction.innerText = "Step 2/2: Select end point";
+        } else if (state === MouseState.MEASURE_VERTICAL) {
+            title.innerText = "Tool: Measure Vertical";
+            let step = this.mouseControl.verticalMeasurementTool.step;
             if (step === 0) instruction.innerText = "Step 1/2: Select start point";
             else instruction.innerText = "Step 2/2: Select end point";
         } else if (state === MouseState.MEASURE_ANGLE) {
