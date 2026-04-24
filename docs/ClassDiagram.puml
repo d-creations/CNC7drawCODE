@@ -1,0 +1,136 @@
+﻿@startuml
+
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 50
+
+package "Core" {
+    class CNC3drawCODE
+    class Config
+}
+
+package "UI & Controls" {
+    class View3d
+    class Camera
+    class MouseControl
+    class KeyboardManager
+    class CommandRegistry
+    class CommandPanel
+    class PropertyEditor
+    class LetterDrawer
+}
+
+package "Constraints & Math" {
+    class ConstraintSystem
+    class GCS
+    class Geometry
+    class BaseNonLinearSolver
+}
+
+package "Storage" {
+    class BaseStorage
+    class LocalSketchStorage
+    class HistoryManager
+    class ClipboardManager
+}
+
+package "Shapes" {
+    class DrawBoard
+    class BaseShape
+    class Point
+    class DrawLine
+    class DrawCircle
+    class DrawArc
+    class BaseMeasurementShape
+    class AngleMeasurementShape
+    class HorizontalMeasurementShape
+    class LengthMeasurementShape
+    class RadiusMeasurementShape
+    class VerticalMeasurementShape
+}
+
+package "Tools" {
+    class BaseTool
+    class PointTool
+    class LineTool
+    class Circle3PTool
+    class Circle2T1RTool
+    class Circle3TTool
+    class Arc3PTool
+    class ArcCenterTool
+    class LengthMeasurementTool
+    class AngleMeasurementTool
+    class RadiusMeasurementTool
+    class HorizontalMeasurementTool
+    class VerticalMeasurementTool
+}
+
+' --- Usage & Instantiation Relationships (Where objects are used) ---
+
+CNC3drawCODE --> View3d : creates
+
+View3d *-- DrawBoard : creates & owns
+View3d *-- Camera : creates & owns
+View3d *-- MouseControl : creates & owns
+View3d *-- PropertyEditor : creates & owns
+View3d *-- CommandPanel : creates & owns
+View3d *-- KeyboardManager : creates & owns
+
+MouseControl --> DrawBoard : uses
+MouseControl --> CommandRegistry : uses
+MouseControl --> BaseTool : creates & uses
+
+KeyboardManager --> MouseControl : uses
+KeyboardManager --> DrawBoard : uses
+KeyboardManager --> CommandRegistry : uses
+
+CommandPanel --> MouseControl : uses
+CommandPanel --> CommandRegistry : uses
+
+DrawBoard --> Camera : uses
+DrawBoard --> ConstraintSystem : creates & owns
+DrawBoard --> LocalSketchStorage : creates & uses
+DrawBoard --> HistoryManager : creates & uses
+DrawBoard --> ClipboardManager : uses
+DrawBoard --> Config : uses
+DrawBoard --> LetterDrawer : uses
+DrawBoard o-- BaseShape : stores and manages (drawObjects)
+
+ConstraintSystem *-- GCS : creates & uses
+GCS --> BaseNonLinearSolver : uses
+GCS --> Geometry : uses
+
+HistoryManager --> LocalSketchStorage : uses internally
+
+' --- Inheritance / Subclass Relationships ---
+
+BaseStorage <|-- LocalSketchStorage
+
+BaseShape <|-- Point
+BaseShape <|-- DrawLine
+BaseShape <|-- DrawCircle
+BaseShape <|-- DrawArc
+BaseShape <|-- BaseMeasurementShape
+
+BaseMeasurementShape <|-- AngleMeasurementShape
+BaseMeasurementShape <|-- HorizontalMeasurementShape
+BaseMeasurementShape <|-- LengthMeasurementShape
+BaseMeasurementShape <|-- RadiusMeasurementShape
+BaseMeasurementShape <|-- VerticalMeasurementShape
+
+BaseTool <|-- PointTool
+BaseTool <|-- LineTool
+BaseTool <|-- Circle3PTool
+BaseTool <|-- Circle2T1RTool
+BaseTool <|-- Circle3TTool
+BaseTool <|-- Arc3PTool
+BaseTool <|-- ArcCenterTool
+
+' Second row of tools to reduce width
+BaseTool <|-- LengthMeasurementTool
+BaseTool <|-- AngleMeasurementTool
+BaseTool <|-- RadiusMeasurementTool
+BaseTool <|-- HorizontalMeasurementTool
+BaseTool <|-- VerticalMeasurementTool
+
+@enduml
