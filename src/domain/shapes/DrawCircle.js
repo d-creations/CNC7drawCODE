@@ -11,15 +11,17 @@ export class DrawCircle extends BaseShape {
         this.radius = radius;
     }
 
-    draw() {
-        let centerCam = this.centerPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let cameraScale = this.camera.getCalcMatrix()[0][0];
-        let scaledRadius = this.radius * cameraScale;
-
-        this.ctx.beginPath();
-        this.ctx.arc(centerCam.x, centerCam.y, scaledRadius, 0, 2 * Math.PI);
-        this.ctx.strokeStyle = this.color;
-        this.ctx.stroke();
+    getRenderData() {
+        return [
+            {
+                primitive: 'arc',
+                worldX: this.centerPoint.vec4.x,
+                worldY: this.centerPoint.vec4.y,
+                worldRadius: this.radius,
+                color: this.color,
+                stroke: true
+            }
+        ];
     }
 
     check(x, y) {

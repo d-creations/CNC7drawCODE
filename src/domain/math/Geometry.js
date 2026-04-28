@@ -7,6 +7,20 @@ export class Geometry {
     }
 
     /**
+     * Calculates the circumcenter of a triangle formed by 3 points
+     */
+    static getCircumcenter(pA, pB, pC) {
+        let d = 2 * (pA.x * (pB.y - pC.y) + pB.x * (pC.y - pA.y) + pC.x * (pA.y - pB.y));
+        if (Math.abs(d) < 1e-6) return { x: pA.x, y: pA.y, r: 0 }; // collinear points
+
+        let x = ((pA.x*pA.x + pA.y*pA.y) * (pB.y - pC.y) + (pB.x*pB.x + pB.y*pB.y) * (pC.y - pA.y) + (pC.x*pC.x + pC.y*pC.y) * (pA.y - pB.y)) / d;
+        let y = ((pA.x*pA.x + pA.y*pA.y) * (pC.x - pB.x) + (pB.x*pB.x + pB.y*pB.y) * (pA.x - pC.x) + (pC.x*pC.x + pC.y*pC.y) * (pB.x - pA.x)) / d;
+        let r = Math.sqrt(Math.pow(pA.x - x, 2) + Math.pow(pA.y - y, 2));
+
+        return { x: x, y: y, r: r };
+    }
+
+    /**
      * Finds the intersection point of two infinite lines.
      * Returns null if lines are parallel.
      */

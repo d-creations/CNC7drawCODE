@@ -12,95 +12,24 @@ export class LengthMeasurementShape extends BaseMeasurementShape {
         this.type = "LengthMeasurement";
     }
 
-    draw() {
-        if (!this.p1 || !this.p2) return;
+    getRenderData() {
+        if (!this.p1 || !this.p2) return [];
 
-        const ctx = this.drawBoard.context;
-        const camera = this.drawBoard.camera;
-
-        const v1 = new Vec4(this.p1.x, this.p1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        const v2 = new Vec4(this.p2.x, this.p2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-
-        // Calculate angle and length in screen space
-        const dx = v2.x - v1.x;
-        const dy = v2.y - v1.y;
-        const screenLen = Math.sqrt(dx * dx + dy * dy);
-        if (screenLen < 1) return;
-
-        const ang = Math.atan2(dy, dx);
-        
-        ctx.save();
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1;
-
-        // Draw extension lines
-        const nx = -Math.sin(ang);
-        const ny = Math.cos(ang);
-        const ex1 = v1.x + nx * this.offset;
-        const ey1 = v1.y + ny * this.offset;
-        const ex2 = v2.x + nx * this.offset;
-        const ey2 = v2.y + ny * this.offset;
-
-        // extension lines from points to offset
-        ctx.beginPath();
-        ctx.moveTo(v1.x, v1.y);
-        ctx.lineTo(ex1, ey1);
-        ctx.moveTo(v2.x, v2.y);
-        ctx.lineTo(ex2, ey2);
-        
-        // draw main dimension line
-        ctx.moveTo(ex1, ey1);
-        ctx.lineTo(ex2, ey2);
-
-        // draw arrows
-        const arrowSize = 10;
-        const arrowAng = Math.PI / 6;
-        
-        const a1x = ex1 + Math.cos(ang - arrowAng) * arrowSize;
-        const a1y = ey1 + Math.sin(ang - arrowAng) * arrowSize;
-        const a2x = ex1 + Math.cos(ang + arrowAng) * arrowSize;
-        const a2y = ey1 + Math.sin(ang + arrowAng) * arrowSize;
-
-        const b1x = ex2 - Math.cos(ang - arrowAng) * arrowSize;
-        const b1y = ey2 - Math.sin(ang - arrowAng) * arrowSize;
-        const b2x = ex2 - Math.cos(ang + arrowAng) * arrowSize;
-        const b2y = ey2 - Math.sin(ang + arrowAng) * arrowSize;
-
-        ctx.moveTo(ex1, ey1);
-        ctx.lineTo(a1x, a1y);
-        ctx.moveTo(ex1, ey1);
-        ctx.lineTo(a2x, a2y);
-
-        ctx.moveTo(ex2, ey2);
-        ctx.lineTo(b1x, b1y);
-        ctx.moveTo(ex2, ey2);
-        ctx.lineTo(b2x, b2y);
-
-        ctx.stroke();
-
-        // compute length in world space
         const w_dx = this.p2.x - this.p1.x;
         const w_dy = this.p2.y - this.p1.y;
         const length = Math.sqrt(w_dx * w_dx + w_dy * w_dy);
         const text = length.toFixed(2);
 
-        const midX = (ex1 + ex2) / 2;
-        const midY = (ey1 + ey2) / 2;
-
-        ctx.translate(midX, midY);
-        // keep text upright
-        let textAng = ang;
-        if (textAng > Math.PI / 2 || textAng < -Math.PI / 2) {
-            textAng += Math.PI;
-        }
-        ctx.rotate(textAng);
-        
-        // We draw text centered, slightly offset from the line
-        const charSize = 8;
-        const textWidth = text.length * charSize * 1.5;
-        this.drawStickText(ctx, text, -textWidth / 2, -charSize - 2, charSize, this.color);
-
-        ctx.restore();
+        return [
+            {
+                primitive: 'dimension_length',
+                worldP1: { x: this.p1.x, y: this.p1.y },
+                worldP2: { x: this.p2.x, y: this.p2.y },
+                offset: this.offset,
+                text: text,
+                color: this.color
+            }
+        ];
     }
 
     check(x, y, zoom) {

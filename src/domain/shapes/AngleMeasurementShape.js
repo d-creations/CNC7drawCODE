@@ -12,48 +12,30 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         this.type = "AngleMeasurement";
     }
 
-    draw() {
-        if (!this.l1 || !this.l2) return;
-
-        const ctx = this.drawBoard.context;
-        const camera = this.drawBoard.camera;
-
-        // compute intersection point of the two lines in world space
+    getRenderData() {
+        if (!this.l1 || !this.l2) return [];
         const intersection = Geometry.lineIntersection(this.l1, this.l2);
-        if (!intersection) return; // Parallel
-
-        const interScr = new Vec4(intersection.x, intersection.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-
-        // Get view direction angles of the two lines towards their max length point relative to intersection
+        if (!intersection) return [];
+        
         let a1 = Math.atan2(this.l1.endpoint.vec4.y - this.l1.startPoint.vec4.y, this.l1.endpoint.vec4.x - this.l1.startPoint.vec4.x);
         let a2 = Math.atan2(this.l2.endpoint.vec4.y - this.l2.startPoint.vec4.y, this.l2.endpoint.vec4.x - this.l2.startPoint.vec4.x);
         
-        // For simplicity, we just draw the angle arc
         let angle = Math.abs(a2 - a1);
         if (angle > Math.PI) angle = 2 * Math.PI - angle;
-        
-        ctx.save();
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1;
-
-        ctx.beginPath();
-        // Since we are in screen space, we just draw an arc at the screen intersection
-        ctx.arc(interScr.x, interScr.y, this.radius, Math.min(a1, a2), Math.max(a1, a2));
-        ctx.stroke();
-
         const deg = (angle * 180 / Math.PI).toFixed(1);
-        const text = deg + "°"; // using sticking font for degree might lack the symbol, we'll just write it. Stick font has no °, let's use ' deg'
-        const textToDraw = deg + " deg";
-
+        const textToDraw = deg + ' deg';
         const midAng = (a1 + a2) / 2;
-        const textX = interScr.x + Math.cos(midAng) * (this.radius + 15);
-        const textY = interScr.y + Math.sin(midAng) * (this.radius + 15);
 
-        const charSize = 8;
-        const textWidth = textToDraw.length * charSize * 1.5;
-        this.drawStickText(ctx, textToDraw, textX - textWidth/2, textY, charSize, this.color);
-
-        ctx.restore();
+        return [{
+            primitive: 'dimension_angle',
+            worldIntersection: { x: intersection.x, y: intersection.y },
+            radius: this.radius,
+            a1: Math.min(a1, a2),
+            a2: Math.max(a1, a2),
+            midAng: midAng,
+            text: textToDraw,
+            color: this.color
+        }];
     }
 
     check(x, y) {

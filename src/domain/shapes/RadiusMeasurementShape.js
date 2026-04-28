@@ -10,65 +10,16 @@ export class RadiusMeasurementShape extends BaseMeasurementShape {
         this.type = "RadiusMeasurement";
     }
 
-    draw() {
-        if (!this.circle || !this.circle.centerPoint) return;
-
-        const ctx = this.drawBoard.context;
-        const camera = this.drawBoard.camera;
-        const scale = camera.getCalcMatrix()[0][0];
-
-        const centerCam = this.circle.centerPoint.vec4.mulMatrix(camera.getCalcMatrix());
-        const scaledRadius = this.circle.radius * scale;
-
-        ctx.save();
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1;
-
-        // Edge point
-        const ex = centerCam.x + Math.cos(this.angle) * scaledRadius;
-        const ey = centerCam.y - Math.sin(this.angle) * scaledRadius; // Y acts upwards? Actually screen Y is inverted, wait... 
-
-        // Let's stick with std screen coordinates in DrawBoard:
-        const screenAng = -this.angle; 
-        const sx = centerCam.x + Math.cos(screenAng) * scaledRadius;
-        const sy = centerCam.y + Math.sin(screenAng) * scaledRadius;
-
-        // Draw line from center to edge, and slightly past it
-        ctx.beginPath();
-        ctx.moveTo(centerCam.x, centerCam.y);
-        
-        const extLen = 20;
-        const lx = centerCam.x + Math.cos(screenAng) * (scaledRadius + extLen);
-        const ly = centerCam.y + Math.sin(screenAng) * (scaledRadius + extLen);
-        
-        ctx.lineTo(lx, ly);
-
-        // Draw arrow at the edge
-        const arrowSize = 10;
-        const arrowAng = Math.PI / 6;
-        
-        const a1x = sx - Math.cos(screenAng - arrowAng) * arrowSize;
-        const a1y = sy - Math.sin(screenAng - arrowAng) * arrowSize;
-        const a2x = sx - Math.cos(screenAng + arrowAng) * arrowSize;
-        const a2y = sy - Math.sin(screenAng + arrowAng) * arrowSize;
-
-        ctx.moveTo(a1x, a1y);
-        ctx.lineTo(sx, sy);
-        ctx.lineTo(a2x, a2y);
-
-        ctx.stroke();
-
-        // compute label
-        const r_text = "R" + this.circle.radius.toFixed(2);
-
-        // We draw text centered, slightly offset from the line
-        ctx.translate(lx, ly);
-        
-        const charSize = 8;
-        const textWidth = r_text.length * charSize * 1.5;
-        this.drawStickText(ctx, r_text, 5, -charSize/2, charSize, this.color);
-
-        ctx.restore();
+    getRenderData() {
+        if (!this.circle || !this.circle.centerPoint) return [];
+        return [{
+            primitive: 'dimension_radius',
+            worldCenter: { x: this.circle.centerPoint.vec4.x, y: this.circle.centerPoint.vec4.y },
+            worldRadius: this.circle.radius,
+            angle: this.angle,
+            text: 'R' + this.circle.radius.toFixed(2),
+            color: this.color
+        }];
     }
 
     check(x, y, zoom) {

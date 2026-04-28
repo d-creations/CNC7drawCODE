@@ -11,84 +11,17 @@ export class VerticalMeasurementShape extends BaseMeasurementShape {
         this.type = "VerticalMeasurement";
     }
 
-    draw() {
-        if (!this.p1 || !this.p2) return;
-
-        const ctx = this.drawBoard.context;
-        const camera = this.drawBoard.camera;
-
-        const v1 = new Vec4(this.p1.x, this.p1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        const v2 = new Vec4(this.p2.x, this.p2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-
-        const dy = v2.y - v1.y;
-        const screenLen = Math.abs(dy);
-        if (screenLen < 1) return;
-
-        const ang = dy >= 0 ? Math.PI/2 : -Math.PI/2;
-        
-        // Place dimension line at an offset from average X
-        const baseX = (v1.x + v2.x) / 2;
-        const ex = baseX + this.offset;
-
-        const ey1 = v1.y;
-        const ey2 = v2.y;
-
-        ctx.save();
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 1;
-
-        // extension lines
-        ctx.beginPath();
-        ctx.moveTo(v1.x, v1.y);
-        ctx.lineTo(ex, ey1);
-        ctx.moveTo(v2.x, v2.y);
-        ctx.lineTo(ex, ey2);
-        
-        // draw main dimension line
-        ctx.moveTo(ex, ey1);
-        ctx.lineTo(ex, ey2);
-
-        // draw arrows
-        const arrowSize = 10;
-        const arrowAng = Math.PI / 6;
-        
-        const a1x = ex + Math.cos(ang - arrowAng) * arrowSize;
-        const a1y = ey1 + Math.sin(ang - arrowAng) * arrowSize;
-        const a2x = ex + Math.cos(ang + arrowAng) * arrowSize;
-        const a2y = ey1 + Math.sin(ang + arrowAng) * arrowSize;
-
-        const b1x = ex - Math.cos(ang - arrowAng) * arrowSize;
-        const b1y = ey2 - Math.sin(ang - arrowAng) * arrowSize;
-        const b2x = ex - Math.cos(ang + arrowAng) * arrowSize;
-        const b2y = ey2 - Math.sin(ang + arrowAng) * arrowSize;
-
-        ctx.moveTo(ex, ey1);
-        ctx.lineTo(a1x, a1y);
-        ctx.moveTo(ex, ey1);
-        ctx.lineTo(a2x, a2y);
-
-        ctx.moveTo(ex, ey2);
-        ctx.lineTo(b1x, b1y);
-        ctx.moveTo(ex, ey2);
-        ctx.lineTo(b2x, b2y);
-
-        ctx.stroke();
-
-        // compute length in world space
+    getRenderData() {
+        if (!this.p1 || !this.p2) return [];
         const w_dy = Math.abs(this.p2.y - this.p1.y);
-        const text = w_dy.toFixed(2);
-
-        const midX = ex;
-        const midY = (ey1 + ey2) / 2;
-
-        ctx.translate(midX, midY);
-        ctx.rotate(-Math.PI / 2);
-        
-        const charSize = 8;
-        const textWidth = text.length * charSize * 1.5;
-        this.drawStickText(ctx, text, -textWidth / 2, -charSize - 2, charSize, this.color);
-
-        ctx.restore();
+        return [{
+            primitive: 'dimension_vertical',
+            worldP1: { x: this.p1.x, y: this.p1.y },
+            worldP2: { x: this.p2.x, y: this.p2.y },
+            offset: this.offset,
+            text: w_dy.toFixed(2),
+            color: this.color
+        }];
     }
 
     check(x, y, zoom) {

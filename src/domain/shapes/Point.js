@@ -13,15 +13,19 @@ export class Point extends BaseShape {
     get y() { return this.vec4.y; }
     set y(val) { this.vec4.y = val; }
 
-    draw() {
-        let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix());
-        this.ctx.beginPath();
-        this.ctx.arc(cameraVec4.x, cameraVec4.y, 5, 0, 2 * Math.PI);
-        this.ctx.fillStyle = this.color;
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeStyle = this.color;
-        this.ctx.fill();
-        this.ctx.stroke();
+    getRenderData() {
+        return [
+            {
+                primitive: 'arc',
+                worldX: this.vec4.x,
+                worldY: this.vec4.y,
+                radius: 5,
+                color: this.color,
+                fill: true,
+                stroke: true,
+                lineWidth: 4
+            }
+        ];
     }
 
     check(x, y) {

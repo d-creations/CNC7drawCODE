@@ -15,15 +15,19 @@ export class DrawArc extends BaseShape {
         this.endAngle = endAngle;
     }
 
-    draw() {
-        let centerCam = this.centerPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let cameraScale = this.camera.getCalcMatrix()[0][0];
-        let scaledRadius = this.radius * cameraScale;
-
-        this.ctx.beginPath();
-        this.ctx.arc(centerCam.x, centerCam.y, scaledRadius, this.startAngle, this.endAngle);
-        this.ctx.strokeStyle = this.color;
-        this.ctx.stroke();
+    getRenderData() {
+        return [
+            {
+                primitive: 'arc',
+                worldX: this.centerPoint.vec4.x,
+                worldY: this.centerPoint.vec4.y,
+                worldRadius: this.radius,
+                startAngle: this.startAngle,
+                endAngle: this.endAngle,
+                color: this.color,
+                stroke: true
+            }
+        ];
     }
 
     check(x, y) {

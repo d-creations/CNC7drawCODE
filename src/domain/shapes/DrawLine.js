@@ -11,15 +11,17 @@ export class DrawLine extends BaseShape {
         this.endpoint = endpoint;
     }
 
-    draw() {
-        let startPointcameraVec4 = this.startPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let endPointcameraVec4 = this.endpoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        
-        this.ctx.beginPath();
-        this.ctx.moveTo(startPointcameraVec4.x, startPointcameraVec4.y);
-        this.ctx.lineTo(endPointcameraVec4.x, endPointcameraVec4.y);
-        this.ctx.strokeStyle = this.color;
-        this.ctx.stroke();
+    getRenderData() {
+        return [
+            {
+                primitive: 'line',
+                worldStartX: this.startPoint.vec4.x,
+                worldStartY: this.startPoint.vec4.y,
+                worldEndX: this.endpoint.vec4.x,
+                worldEndY: this.endpoint.vec4.y,
+                color: this.color
+            }
+        ];
     }
 
     check(x, y) {

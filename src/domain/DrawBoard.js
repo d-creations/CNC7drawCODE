@@ -23,6 +23,8 @@ let selectedobj = {
     y : 9999
 }
 
+import { CanvasRenderer } from "./renderers/CanvasRenderer.js";
+
 export class DrawBoard{
 
     context
@@ -38,6 +40,7 @@ export class DrawBoard{
     constructor(canvas,camera){
         this.camera = camera
         this.context = canvas.getContext("2d")
+        this.renderer = new CanvasRenderer(this.context, this.camera);
         this.canvas = canvas
         this.drawObjects = []
         this.drawTempObjects = []    
@@ -486,12 +489,8 @@ export class DrawBoard{
         this.context.fillStyle = "whitesmoke";
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        for(let obj of this.drawObjects){
-            obj.draw()
-        }
-        for(let obj of this.drawTempObjects){
-            obj.draw()
-        }
+        let allShapes = this.drawObjects.concat(this.drawTempObjects);
+        this.renderer.renderShapes(allShapes);
 
         if (this.selectionBox && this.selectionBox.active) {
             let sb = this.selectionBox;
