@@ -4,7 +4,7 @@ import { Geometry } from "../math/Geometry.js";
 
 export class AngleMeasurementShape extends BaseMeasurementShape {
     constructor(drawBoard, line1, line2) {
-        super(drawBoard.context, drawBoard.camera);
+        super();
         this.drawBoard = drawBoard;
         this.l1 = line1;
         this.l2 = line2;
@@ -38,40 +38,6 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         }];
     }
 
-    check(x, y) {
-        if (!this.l1 || !this.l2) return Infinity;
-
-        const intersection = Geometry.lineIntersection(this.l1, this.l2);
-        if (!intersection) return Infinity; // Parallel
-        
-        const interScr = new Vec4(intersection.x, intersection.y, 0, 1).mulMatrix(this.drawBoard.camera.getCalcMatrix());
-        
-        // distance from intersection center to mouse
-        const distToCenter = Math.sqrt((x - interScr.x)**2 + (y - interScr.y)**2);
-        
-        // Is mouse close to the arc?
-        const band = Math.abs(distToCenter - this.radius);
-        
-        // Simple angle bounding:
-        let a1 = Math.atan2(this.l1.endpoint.vec4.y - this.l1.startPoint.vec4.y, this.l1.endpoint.vec4.x - this.l1.startPoint.vec4.x);
-        let a2 = Math.atan2(this.l2.endpoint.vec4.y - this.l2.startPoint.vec4.y, this.l2.endpoint.vec4.x - this.l2.startPoint.vec4.x);
-        
-        let targetAng = Math.atan2(y - interScr.y, x - interScr.x);
-        // Norm target to [min, max] logic used in draw()
-        let minA = Math.min(a1, a2);
-        let maxA = Math.max(a1, a2);
-        
-        // Normalize target angle to be compared
-        // Since Math.atan2 returns -PI to PI
-        if (targetAng < minA) targetAng += 2 * Math.PI;
-        if (targetAng > maxA + 2 * Math.PI) targetAng -= 2 * Math.PI;
-
-        if (targetAng >= minA && targetAng <= maxA) {
-            return band;
-        }
-
-        return Infinity;
-    }
 
     buildProperties(editor) {
         let divArea = document.createElement('div');

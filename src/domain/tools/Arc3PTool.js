@@ -47,11 +47,11 @@ export class Arc3PTool extends BaseTool {
                     fixed: false
                 });
 
-                let centerPointObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(arcData.cx, arcData.cy, 0, 1));
+                let centerPointObj = new Point(new Vec4(arcData.cx, arcData.cy, 0, 1));
                 centerPointObj.constraintId = centerId;
                 this.drawBoard.drawObjects.push(centerPointObj);
 
-                let arcObj = new DrawArc(this.drawBoard.context, this.drawBoard.camera, centerPointObj, arcData.r, arcData.startAngle, arcData.endAngle);
+                let arcObj = new DrawArc(centerPointObj, arcData.r, arcData.startAngle, arcData.endAngle);
                 arcObj.constraintId = arcId;
                 this.drawBoard.drawObjects.push(arcObj);
             }
@@ -84,8 +84,8 @@ export class Arc3PTool extends BaseTool {
             this.drawBoard.clearTempObjects();
             
             if (arcData) {
-                let cPoint = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(arcData.cx, arcData.cy, 0, 1));
-                let previewArc = new DrawArc(this.drawBoard.context, this.drawBoard.camera, cPoint, arcData.r, arcData.startAngle, arcData.endAngle);
+                let cPoint = new Point(new Vec4(arcData.cx, arcData.cy, 0, 1));
+                let previewArc = new DrawArc(cPoint, arcData.r, arcData.startAngle, arcData.endAngle);
                 previewArc.changeColor("green");
                 this.drawBoard.drawTempObjects.push(previewArc);
             }

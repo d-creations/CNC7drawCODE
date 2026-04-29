@@ -96,15 +96,13 @@ export class Circle2T1RTool extends BaseTool {
         this.constraintSystem.addConstraint({ type: "Radius", targets: [circId], value: startCirc.r });
 
         // 4. Finally, tell the view to render it
-        let pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startCirc.x, startCirc.y, 0, 1));
+        let pObj = new Point(new Vec4(startCirc.x, startCirc.y, 0, 1));
         pObj.constraintId = centerId;
-        
-        let cObj = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, pObj, startCirc.r);
+        let cObj = new DrawCircle(pObj, startCirc.r);
         cObj.constraintId = circId;
-
+        this.drawBoard.drawObjects.push(pObj);
         this.drawBoard.drawObjects.push(cObj);
         this.drawBoard.draw();
-        
         console.log("2-Tangent 1-Radius Circle Created via Constraints!");
     }
 }

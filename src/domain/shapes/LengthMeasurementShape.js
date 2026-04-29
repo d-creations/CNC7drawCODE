@@ -4,7 +4,7 @@ import { Geometry } from "../math/Geometry.js";
 
 export class LengthMeasurementShape extends BaseMeasurementShape {
     constructor(drawBoard, point1, point2) {
-        super(drawBoard.context, drawBoard.camera);
+        super();
         this.drawBoard = drawBoard;
         this.p1 = point1;
         this.p2 = point2;
@@ -32,40 +32,6 @@ export class LengthMeasurementShape extends BaseMeasurementShape {
         ];
     }
 
-    check(x, y, zoom) {
-        if (!this.p1 || !this.p2) return Infinity;
-
-        const camera = this.drawBoard.camera;
-        const v1 = new Vec4(this.p1.x, this.p1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        const v2 = new Vec4(this.p2.x, this.p2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-
-        const dx = v2.x - v1.x;
-        const dy = v2.y - v1.y;
-        const screenLen = Math.sqrt(dx * dx + dy * dy);
-        if (screenLen < 1) return Infinity;
-
-        const ang = Math.atan2(dy, dx);
-        const nx = -Math.sin(ang);
-        const ny = Math.cos(ang);
-        
-        // Target dimension line (the offset line in screen space)
-        const ex1 = v1.x + nx * this.offset;
-        const ey1 = v1.y + ny * this.offset;
-        const ex2 = v2.x + nx * this.offset;
-        const ey2 = v2.y + ny * this.offset;
-
-        // Line-Point Distance Formula for line (ex1,ey1)->(ex2,ey2) to point (x,y)
-        let num = Math.abs((ex2 - ex1) * (ey1 - y) - (ex1 - x) * (ey2 - ey1));
-        let d = num / screenLen;
-
-        // We only want to click if we're between the bounds of the line
-        let dotProduct = ((x - ex1) * (ex2 - ex1) + (y - ey1) * (ey2 - ey1)) / screenLen;
-        if (dotProduct < -20 || dotProduct > screenLen + 20) {
-            return Infinity;
-        }
-
-        return d;
-    }
 
     buildProperties(editor) {
         let divArea = document.createElement('div');

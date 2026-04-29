@@ -63,28 +63,29 @@ export class View3D{
        position.button = e.button;
        return position;
      }
-    constructor(parentDiv) {
+
+    constructor(parentDiv, preCreatedDrawBoard, injectedContainer, injectedCamera) {
         var DView = parentDiv.appendChild(document.createElement("div"));
         DView.id = "DView_Menu";
 
-        let container = parentDiv.appendChild(document.createElement("canvas"))
-        container.classList.add("container")
-        container.id ='container';
-        container.height = 800
-        container.width = 800
-        container.style.height = "800px" // Ensure CSS size is constrained correctly
-        container.style.width = "800px"
-        container.style.backgroundColor = "whitesmoke"
+        // Connect the injected container (Canvas) to the DOM
+        let container = parentDiv.appendChild(injectedContainer);
+        container.classList.add("container");
+        container.id = 'container';
+        container.height = 800;
+        container.width = 800;
+        container.style.height = "800px";
+        container.style.width = "800px";
+        container.style.backgroundColor = "whitesmoke";
 
+        let camera = injectedCamera;
+        camera.moveX(container.width / 2);
+        camera.moveY(container.height / 2);
         
-        let camera = new Camera()
-        // Center the 0,0 coordinate in the middle of the canvas
-        // The default View 0,0 is at top-left. Offsetting by half width/height makes 0,0 the center.
-        camera.moveX(container.width / 2)
-        camera.moveY(container.height / 2)
+        // Dependancy Injection! We observe the pre-created Document.
+        this.drawBoard = preCreatedDrawBoard;
         
-        this.drawBoard = new DrawBoard(container,camera)
-        this.mousecontrol = new MouseControl(DView,this.drawBoard)
+        this.mousecontrol = new MouseControl(DView, this.drawBoard);
         this.commandPanel = new CommandPanel(parentDiv, this.mousecontrol);
         this.keyboardManager = new KeyboardManager(this.mousecontrol, this.drawBoard);
 

@@ -3,7 +3,7 @@ import { Vec4 } from "../Camera.js";
 
 export class RadiusMeasurementShape extends BaseMeasurementShape {
     constructor(drawBoard, circle) {
-        super(drawBoard.context, drawBoard.camera);
+        super();
         this.drawBoard = drawBoard;
         this.circle = circle;
         this.angle = Math.PI / 4; // Default angle for measurement line
@@ -22,32 +22,6 @@ export class RadiusMeasurementShape extends BaseMeasurementShape {
         }];
     }
 
-    check(x, y, zoom) {
-        if (!this.circle) return Infinity;
-
-        const camera = this.drawBoard.camera;
-        const scale = camera.getCalcMatrix()[0][0];
-        const centerCam = this.circle.centerPoint.vec4.mulMatrix(camera.getCalcMatrix());
-        const scaledRadius = this.circle.radius * scale;
-
-        const screenAng = -this.angle;
-        const extLen = 20;
-        const lx = centerCam.x + Math.cos(screenAng) * (scaledRadius + extLen);
-        const ly = centerCam.y + Math.sin(screenAng) * (scaledRadius + extLen);
-
-        const screenLen = scaledRadius + extLen;
-        if (screenLen < 1) return Infinity;
-
-        let num = Math.abs((lx - centerCam.x) * (centerCam.y - y) - (centerCam.x - x) * (ly - centerCam.y));
-        let d = num / screenLen;
-
-        let dotProduct = ((x - centerCam.x) * (lx - centerCam.x) + (y - centerCam.y) * (ly - centerCam.y)) / screenLen;
-        if (dotProduct < -20 || dotProduct > screenLen + 20) {
-            return Infinity;
-        }
-
-        return d;
-    }
 
     buildProperties(editor) {
         let divArea = document.createElement('div');

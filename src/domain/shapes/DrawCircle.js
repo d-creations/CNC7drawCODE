@@ -5,13 +5,17 @@ export class DrawCircle extends BaseShape {
     centerPoint;
     radius;
 
-    constructor(ctx, camera, centerPoint, radius) {
-        super(ctx, camera);
+    constructor(centerPoint, radius) {
+        super();
         this.centerPoint = centerPoint;
         this.radius = radius;
     }
 
     getRenderData() {
+        if (!this.centerPoint || !this.centerPoint.vec4) {
+            // Defensive: skip rendering if centerPoint is not valid
+            return [];
+        }
         return [
             {
                 primitive: 'arc',
@@ -24,39 +28,7 @@ export class DrawCircle extends BaseShape {
         ];
     }
 
-    check(x, y) {
-        let centerCam = this.centerPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let cameraScale = this.camera.getCalcMatrix()[0][0];
-        let scaledRadius = this.radius * cameraScale;
 
-        let distToTarget = Math.sqrt(Math.pow(x - centerCam.x, 2) + Math.pow(y - centerCam.y, 2));
-        return Math.abs(distToTarget - scaledRadius);
-    }
-
-    checkInsideArea(minX, minY, maxX, maxY, requireComplete) {
-        let centerCam = this.centerPoint.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let cameraScale = this.camera.getCalcMatrix()[0][0];
-        let scaledRadius = this.radius * cameraScale;
-
-        let cx = centerCam.x;
-        let cy = centerCam.y;
-
-        if (requireComplete) {
-            return cx - scaledRadius >= minX && cx + scaledRadius <= maxX && 
-                   cy - scaledRadius >= minY && cy + scaledRadius <= maxY;
-        } else {
-            // Check if center is inside the box
-            if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) return true;
-
-            // Check if closest point on bounding box is within radius
-            let closestX = Math.max(minX, Math.min(cx, maxX));
-            let closestY = Math.max(minY, Math.min(cy, maxY));
-
-            let distanceX = cx - closestX;
-            let distanceY = cy - closestY;
-            return (distanceX * distanceX + distanceY * distanceY) <= (scaledRadius * scaledRadius);
-        }
-    }
 
     buildProperties(editor) {
         editor.buildPointFields(this.centerPoint, "Center Point");

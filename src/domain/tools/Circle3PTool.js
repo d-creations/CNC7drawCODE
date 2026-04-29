@@ -39,7 +39,7 @@ export class Circle3PTool extends BaseTool {
             });
 
             // Create visual representation for the new point
-            let pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(worldVec.x, worldVec.y, 0, 1));
+            let pObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
             pObj.constraintId = ptId;
             this.drawBoard.drawObjects.push(pObj);
         }
@@ -92,10 +92,9 @@ export class Circle3PTool extends BaseTool {
         });
 
         // D. Create visual representations for the center and the circle itself
-        let pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startCirc.x, startCirc.y, 0, 1));
+        let pObj = new Point(new Vec4(startCirc.x, startCirc.y, 0, 1));
         pObj.constraintId = centerId;
-        
-        let cObj = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, pObj, startCirc.r);
+        let cObj = new DrawCircle(pObj, startCirc.r);
         cObj.constraintId = circId;
 
         this.drawBoard.drawObjects.push(pObj);

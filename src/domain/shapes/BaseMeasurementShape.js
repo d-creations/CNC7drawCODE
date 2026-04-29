@@ -3,8 +3,8 @@ import { stickFont } from "../LetterDrawer.js";
 import { Vec4 } from "../Camera.js";
 
 export class BaseMeasurementShape extends BaseShape {
-    constructor(ctx, camera) {
-        super(ctx, camera);
+    constructor() {
+        super();
         this.color = "purple"; // default measurement color
         this.defaultColor = "purple";
         this.isMeasurement = true; // flag to differentiate from geometry
@@ -37,7 +37,4 @@ export class BaseMeasurementShape extends BaseShape {
     }
 
     // to be overridden
-    check(x, y, zoom) {
-        return { isHit: false, distance: Infinity };
-    }
 }

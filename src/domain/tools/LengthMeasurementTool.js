@@ -25,7 +25,7 @@ export class LengthMeasurementTool extends BaseTool {
                 data: { x: camVec.x, y: camVec.y },
                 fixed: false
             });
-            pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(camVec.x, camVec.y, 0, 1));
+            pObj = new Point(new Vec4(camVec.x, camVec.y, 0, 1));
             pObj.constraintId = ptId;
             this.drawBoard.drawObjects.push(pObj);
         }

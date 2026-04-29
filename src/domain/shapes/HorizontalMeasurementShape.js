@@ -3,7 +3,7 @@ import { Vec4 } from "../Camera.js";
 
 export class HorizontalMeasurementShape extends BaseMeasurementShape {
     constructor(drawBoard, point1, point2) {
-        super(drawBoard.context, drawBoard.camera);
+        super();
         this.drawBoard = drawBoard;
         this.p1 = point1;
         this.p2 = point2;
@@ -24,32 +24,6 @@ export class HorizontalMeasurementShape extends BaseMeasurementShape {
         }];
     }
 
-    check(x, y, zoom) {
-        if (!this.p1 || !this.p2) return Infinity;
-
-        const camera = this.drawBoard.camera;
-        const v1 = new Vec4(this.p1.x, this.p1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        const v2 = new Vec4(this.p2.x, this.p2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-
-        const dx = v2.x - v1.x;
-        const screenLen = Math.abs(dx);
-        if (screenLen < 1) return Infinity;
-
-        const baseY = (v1.y + v2.y) / 2;
-        const ey = baseY + this.offset;
-        const ex1 = v1.x;
-        const ex2 = v2.x;
-
-        let d = Math.abs(y - ey);
-
-        let minX = Math.min(ex1, ex2);
-        let maxX = Math.max(ex1, ex2);
-        if (x < minX || x > maxX) {
-            return Infinity;
-        }
-
-        return d;
-    }
 
     buildProperties(editor) {
         let divArea = document.createElement('div');

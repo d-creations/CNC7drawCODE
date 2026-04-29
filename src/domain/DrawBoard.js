@@ -1,3 +1,4 @@
+import { HitTester } from './renderers/HitTester.js';
 import { Vec4 } from "./Camera.js"
 import { stickFont } from "./LetterDrawer.js"
 import { AppConfig } from "./Config.js"
@@ -106,7 +107,7 @@ export class DrawBoard{
 
             for(let obj of objectsToCheck){
                 if (!allowedTypes.includes(obj.constructor.name)) continue; // snap filter
-                let dist = obj.check(_x,_y)
+                let dist = HitTester.hitTest(obj.getRenderData(), _x, _y, this.camera)
                 if(dist < this.selectDistLampda){
                     if(selectedobj.dist > dist){
                         selectedobj.obj = obj
@@ -137,7 +138,7 @@ export class DrawBoard{
             }
 
             for(let obj of objectsToCheck){
-                let dist = obj.check(x,y)
+                let dist = HitTester.hitTest(obj.getRenderData(), x, y, this.camera)
                 if(dist < this.selectDistLampda && dist < bestDist){
                     bestObj = obj;
                     bestDist = dist;
@@ -187,7 +188,7 @@ export class DrawBoard{
             }
 
             for(let obj of objectsToCheck){
-                let dist = obj.check(x,y)
+                let dist = HitTester.hitTest(obj.getRenderData(), x, y, this.camera)
                 if(dist < this.selectDistLampda){
                     if(selectedobj.dist > dist){
                         selectedobj.obj = obj
@@ -231,7 +232,7 @@ export class DrawBoard{
         for (let obj of this.drawObjects) {
             obj.changeColor(obj.defaultColor || "red"); // Reset
             
-            if (obj.checkInsideArea && obj.checkInsideArea(minX, minY, maxX, maxY, requireComplete)) {
+            if (HitTester.checkInsideArea(obj.getRenderData(), minX, minY, maxX, maxY, requireComplete, this.camera)) {
                 obj.changeColor("green");
                 selected.push(obj);
             }
@@ -357,7 +358,7 @@ export class DrawBoard{
         // Pass 1: Build Visual Points first
         for (const geo of storedData.geometries) {
             if (geo.type === "Point") {
-                let pObj = new Point(this.context, this.camera, new Vec4(geo.data.x, geo.data.y, 0, 1));
+                let pObj = new Point(new Vec4(geo.data.x, geo.data.y, 0, 1));
                 pObj.constraintId = geo.id;
                 uiMap.set(geo.id, pObj);
                 this.drawObjects.push(pObj);
@@ -370,21 +371,21 @@ export class DrawBoard{
                 let p1 = uiMap.get(geo.data.start);
                 let p2 = uiMap.get(geo.data.end);
                 if (p1 && p2) {
-                    let lObj = new DrawLine(this.context, this.camera, p1, p2);
+                    let lObj = new DrawLine(p1, p2);
                     lObj.constraintId = geo.id;
                     this.drawObjects.push(lObj);
                 }
             } else if (geo.type === "Circle") {
                 let centerPoint = uiMap.get(geo.data.center);
                 if (centerPoint) {
-                    let cObj = new DrawCircle(this.context, this.camera, centerPoint, geo.data.r);
+                    let cObj = new DrawCircle(centerPoint, geo.data.r);
                     cObj.constraintId = geo.id;
                     this.drawObjects.push(cObj);
                 }
             } else if (geo.type === "Arc") {
                 let centerPoint = uiMap.get(geo.data.center);
                 if (centerPoint) {
-                    let aObj = new DrawArc(this.context, this.camera, centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle);
+                    let aObj = new DrawArc(centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle);
                     aObj.constraintId = geo.id;
                     this.drawObjects.push(aObj);
                 }
@@ -452,7 +453,7 @@ export class DrawBoard{
                         } 
                         else if (obj.constructor.name === "DrawCircle") {
                             let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
-                            if (centerData) {
+                            if (centerData && obj.centerPoint && obj.centerPoint.vec4) {
                                 obj.centerPoint.vec4.x = centerData.x;
                                 obj.centerPoint.vec4.y = centerData.y;
                             }
@@ -460,7 +461,7 @@ export class DrawBoard{
                         }
                         else if (obj.constructor.name === "DrawArc") {
                             let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
-                            if (centerData) {
+                            if (centerData && obj.centerPoint && obj.centerPoint.vec4) {
                                 obj.centerPoint.vec4.x = centerData.x;
                                 obj.centerPoint.vec4.y = centerData.y;
                             }

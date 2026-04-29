@@ -74,12 +74,11 @@ export class Circle3TTool extends BaseTool {
         this.constraintSystem.addConstraint({ type: "Tangent", targets: [l3Id, circId] });
 
         // 4. Finally, tell the view to render it (Instantiate standard DrawCircle linked to the JSON center!)
-        let pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startCirc.x, startCirc.y, 0, 1));
+        let pObj = new Point(new Vec4(startCirc.x, startCirc.y, 0, 1));
         pObj.constraintId = centerId; // link them
-        
-        let cObj = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, pObj, startCirc.r);
+        let cObj = new DrawCircle(pObj, startCirc.r);
         cObj.constraintId = circId; // link them
-
+        this.drawBoard.drawObjects.push(pObj);
         this.drawBoard.drawObjects.push(cObj);
         this.drawBoard.draw();
         console.log("3-Tangent Circle Created via Constraints!");

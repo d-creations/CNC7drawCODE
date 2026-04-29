@@ -19,6 +19,7 @@ export class LineTool extends BaseTool {
         let snapped = this.drawBoard.selectStartObject(x, y, ["Point"]);
         let ptId, pObj;
 
+
         if (snapped.exist && snapped.obj && snapped.obj.constructor.name === "Point") {
             pObj = snapped.obj;
             ptId = pObj.constraintId;
@@ -34,7 +35,7 @@ export class LineTool extends BaseTool {
             });
 
             // 2. Create the visual Point object
-            pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(worldVec.x, worldVec.y, 0, 1));
+            pObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
             pObj.constraintId = ptId;
             this.drawBoard.drawObjects.push(pObj);
         }
@@ -52,7 +53,7 @@ export class LineTool extends BaseTool {
             });
 
             // Create the visual Line object
-            let lObj = new DrawLine(this.drawBoard.context, this.drawBoard.camera, this.startPointObj, pObj);
+            let lObj = new DrawLine(this.startPointObj, pObj);
             lObj.constraintId = lineId;
             this.drawBoard.drawObjects.push(lObj);
 

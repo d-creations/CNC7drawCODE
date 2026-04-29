@@ -131,12 +131,10 @@ export class MouseControl{
         if (this.buttonState === MouseState.CIRCLE_3P && this.circle3PTool.selectedPoints.length > 0) {
             let lastPointId = this.circle3PTool.selectedPoints[this.circle3PTool.selectedPoints.length - 1];
             let data = this.drawBoard.constraintSystem.geometries.get(lastPointId).data;
-            
-            let p1Obj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(data.x, data.y, 0, 1));
+            let p1Obj = new Point(new Vec4(data.x, data.y, 0, 1));
             let currentWorldVec = this.drawBoard.camera.getWorldVec(position.x, position.y);
-            let mousePtObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(currentWorldVec.x, currentWorldVec.y, 0, 1));
-            
-            let trackingLine = new DrawLine(this.drawBoard.context, this.drawBoard.camera, p1Obj, mousePtObj);
+            let mousePtObj = new Point(new Vec4(currentWorldVec.x, currentWorldVec.y, 0, 1));
+            let trackingLine = new DrawLine(p1Obj, mousePtObj);
             trackingLine.color = "blue";
             this.drawBoard.drawTempObjects.push(trackingLine);
             this.drawBoard.draw();
@@ -149,18 +147,18 @@ export class MouseControl{
                 // Fix preview snapping: Pull start/end from selectStartObject live checking to match visual snap
                 let preStart = this.drawBoard.selectStartObject(this.downPosition.x, this.downPosition.y, ["Point"]);
                 let startWorld = preStart.exist && preStart.obj ? preStart.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : this.drawBoard.camera.getWorldVec(this.downPosition.x, this.downPosition.y);
-                
+
                 let preEnd = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
                 let endWorld = preEnd.exist && preEnd.obj ? preEnd.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : this.drawBoard.camera.getWorldVec(position.x, position.y);
-                
+
                 // Unapply the camera matrix visually to get proper world space context to give to Point
                 if (preStart.exist && preStart.obj) startWorld = new Vec4(preStart.obj.vec4.x, preStart.obj.vec4.y, 0, 1);
                 if (preEnd.exist && preEnd.obj) endWorld = new Vec4(preEnd.obj.vec4.x, preEnd.obj.vec4.y, 0, 1);
-                
-                let p1 = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startWorld.x, startWorld.y, 0, 1));
-                let p2 = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(endWorld.x, endWorld.y, 0, 1));
-                
-                let tempLine = new DrawLine(this.drawBoard.context, this.drawBoard.camera, p1, p2);
+
+                let p1 = new Point(new Vec4(startWorld.x, startWorld.y, 0, 1));
+                let p2 = new Point(new Vec4(endWorld.x, endWorld.y, 0, 1));
+
+                let tempLine = new DrawLine(p1, p2);
                 tempLine.color = "gray"; // preview color
                 this.drawBoard.drawTempObjects.push(tempLine);
                 this.drawBoard.draw();
@@ -168,19 +166,19 @@ export class MouseControl{
             else if(this.buttonState == MouseState.CIRCLE){
                 let preStart = this.drawBoard.selectStartObject(this.downPosition.x, this.downPosition.y, ["Point"]);
                 let startWorld = preStart.exist && preStart.obj ? preStart.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : this.drawBoard.camera.getWorldVec(this.downPosition.x, this.downPosition.y);
-                
+
                 let preEnd = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
                 let endWorld = preEnd.exist && preEnd.obj ? preEnd.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : this.drawBoard.camera.getWorldVec(position.x, position.y);
-                
+
                 // Unapply camera matrix for exact world snap positioning
                 if (preStart.exist && preStart.obj) startWorld = new Vec4(preStart.obj.vec4.x, preStart.obj.vec4.y, 0, 1);
                 if (preEnd.exist && preEnd.obj) endWorld = new Vec4(preEnd.obj.vec4.x, preEnd.obj.vec4.y, 0, 1);
 
-                let p1 = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startWorld.x, startWorld.y, 0, 1));
-                
+                let p1 = new Point(new Vec4(startWorld.x, startWorld.y, 0, 1));
+
                 let dist = Math.sqrt(Math.pow(endWorld.x - startWorld.x, 2) + Math.pow(endWorld.y - startWorld.y, 2));
-                
-                let tempCircle = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, p1, dist);
+
+                let tempCircle = new DrawCircle(p1, dist);
                 tempCircle.color = "gray"; // preview color
                 this.drawBoard.drawTempObjects.push(tempCircle);
                 this.drawBoard.draw();
@@ -358,13 +356,13 @@ export class MouseControl{
             // Fix: Re-use snapped points for Circle Center and Edge
             let startSnapped = this.drawBoard.selectStartObject(this.downPosition.x, this.downPosition.y, ["Point"]);
             let endSnapped = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
-            
-            let startWorld = startSnapped.exist && startSnapped.obj ? 
-                startSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : 
+
+            let startWorld = startSnapped.exist && startSnapped.obj ?
+                startSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) :
                 this.drawBoard.camera.getWorldVec(this.downPosition.x, this.downPosition.y);
-                
-            let endWorld = endSnapped.exist && endSnapped.obj ? 
-                endSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) : 
+
+            let endWorld = endSnapped.exist && endSnapped.obj ?
+                endSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) :
                 this.drawBoard.camera.getWorldVec(position.x, position.y);
 
             // Handle start point (Center)
@@ -376,7 +374,7 @@ export class MouseControl{
                 startWorld = new Vec4(centerPObj.vec4.x, centerPObj.vec4.y, 0, 1);
             } else {
                 centerId = this.drawBoard.constraintSystem.addGeometry({ type: "Point", data: { x: startWorld.x, y: startWorld.y }, fixed: false });
-                centerPObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(startWorld.x, startWorld.y, 0, 1));
+                centerPObj = new Point(new Vec4(startWorld.x, startWorld.y, 0, 1));
                 centerPObj.constraintId = centerId;
                 this.drawBoard.drawObjects.push(centerPObj);
             }
@@ -384,8 +382,8 @@ export class MouseControl{
             // Quick inline circle tool porting for standard circle creation
             let dist = Math.sqrt(Math.pow(endWorld.x - startWorld.x, 2) + Math.pow(endWorld.y - startWorld.y, 2));
             let circId = this.drawBoard.constraintSystem.addGeometry({ type: "Circle", data: { center: centerId, r: dist }, fixed: false });
-            
-            let cObj = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, centerPObj, dist);
+
+            let cObj = new DrawCircle(centerPObj, dist);
             cObj.constraintId = circId;
             this.drawBoard.drawObjects.push(cObj);
 
@@ -395,7 +393,7 @@ export class MouseControl{
                     type: "Coincident", targets: [endSnapped.obj.constraintId, circId]
                 });
             }
-            
+
             this.drawBoard.clearTempObjects();
             this.drawBoard.draw(); // FIX: Trigger screen repaint immediately so we don't have to hit F5
         }

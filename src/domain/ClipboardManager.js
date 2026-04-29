@@ -150,7 +150,7 @@ export class ClipboardManager {
             if(c.type === "Point") {
                 let px = c.data.x + offsetX;
                 let py = c.data.y + offsetY;
-                let pt = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(px, py, 0, 1));
+                let pt = new Point(new Vec4(px, py, 0, 1));
                 pt.highlighted = true;
                 let pid = getPreviewId();
                 previewIdMap[c.id] = { geom: pt, id: pid };
@@ -164,7 +164,7 @@ export class ClipboardManager {
                 let p1 = previewIdMap[c.data.start];
                 let p2 = previewIdMap[c.data.end];
                 if(p1 && p2) {
-                    let line = new DrawLine(this.drawBoard.context, this.drawBoard.camera, p1.geom, p2.geom);
+                    let line = new DrawLine(p1.geom, p2.geom);
                     line.id = getPreviewId();
                     line.highlighted = true;
                     previewGeoms.push(line);
@@ -172,7 +172,7 @@ export class ClipboardManager {
             } else if (c.type === "Circle") {
                 let pc = previewIdMap[c.data.center];
                 if (pc) {
-                    let circ = new DrawCircle(this.drawBoard.context, this.drawBoard.camera, pc.geom, c.data.r);
+                    let circ = new DrawCircle(pc.geom, c.data.r);
                     circ.id = getPreviewId();
                     circ.highlighted = true;
                     previewGeoms.push(circ);
@@ -180,7 +180,7 @@ export class ClipboardManager {
             } else if (c.type === "Arc") {
                 let pc = previewIdMap[c.data.center];
                 if (pc) {
-                    let arc = new DrawArc(this.drawBoard.context, this.drawBoard.camera, pc.geom, c.data.r, c.data.startAngle, c.data.endAngle);
+                    let arc = new DrawArc(pc.geom, c.data.r, c.data.startAngle, c.data.endAngle);
                     arc.id = getPreviewId();
                     arc.highlighted = true;
                     previewGeoms.push(arc);

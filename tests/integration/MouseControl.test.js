@@ -51,7 +51,7 @@ describe("Phase 3: MouseControl, Selection & Snapping", () => {
 
     it("should accurately snap to existing Points within selectDistLampda (10px)", () => {
         // Create a point firmly at world (100, 100)
-        let worldPoint = new Point(mockCtx, camera, new Vec4(100, 100, 0, 1));
+        let worldPoint = new Point(new Vec4(100, 100, 0, 1));
         drawBoard.drawObjects.push(worldPoint);
 
         // Simulated screen coordinates (camera is at 0, zoom 1, so 1:1 mapped for ease)
@@ -64,9 +64,9 @@ describe("Phase 3: MouseControl, Selection & Snapping", () => {
     });
 
     it("should filter snapping targets based on the allowedTypes array", () => {
-        let worldPoint = new Point(mockCtx, camera, new Vec4(200, 200, 0, 1));
-        let P2 = new Point(mockCtx, camera, new Vec4(300, 200, 0, 1));
-        let worldLine = new DrawLine(mockCtx, camera, worldPoint, P2);
+        let worldPoint = new Point(new Vec4(200, 200, 0, 1));
+        let P2 = new Point(new Vec4(300, 200, 0, 1));
+        let worldLine = new DrawLine(worldPoint, P2);
 
         drawBoard.drawObjects.push(worldPoint);
         drawBoard.drawObjects.push(worldLine);
@@ -78,7 +78,7 @@ describe("Phase 3: MouseControl, Selection & Snapping", () => {
     });
 
     it("should correctly handle hover states and highlight objects", () => {
-        let testPoint = new Point(mockCtx, camera, new Vec4(500, 500, 0, 1));
+        let testPoint = new Point(new Vec4(500, 500, 0, 1));
         testPoint.color = "blue"; // default color
         testPoint.defaultColor = "blue"; // required by hoverObject to revert
         drawBoard.drawObjects.push(testPoint);

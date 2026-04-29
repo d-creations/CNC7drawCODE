@@ -35,8 +35,9 @@ package "Storage" {
     class ClipboardManager
 }
 
-package "Renderers" {
+package "Renderers (View)" {
     class CanvasRenderer
+    class HitTester
 }
 
 package "Tools" {
@@ -55,18 +56,22 @@ package "Tools" {
     class VerticalMeasurementTool
 }
 
-package "Shapes" {
-    class BaseShape
-    class Point
-    class DrawLine
-    class DrawCircle
-    class DrawArc
-    class BaseMeasurementShape
-    class AngleMeasurementShape
-    class HorizontalMeasurementShape
-    class LengthMeasurementShape
-    class RadiusMeasurementShape
-    class VerticalMeasurementShape
+package "Shapes (Domain Model)" {
+        class BaseShape
+        class Point
+        class DrawLine
+        class DrawCircle
+        class DrawArc
+        class BaseMeasurementShape
+        class AngleMeasurementShape
+        class HorizontalMeasurementShape
+        class LengthMeasurementShape
+        class RadiusMeasurementShape
+        class VerticalMeasurementShape
+        note right of BaseShape
+            Pure data/logic objects
+            No rendering or camera dependencies
+        end note
 }
 
 ' --- Usage & Instantiation Relationships (Where objects are used) ---
@@ -99,10 +104,25 @@ DrawBoard -down-> HistoryManager : creates & uses
 DrawBoard -down-> ClipboardManager : uses
 DrawBoard --> Config : uses
 DrawBoard --> LetterDrawer : uses
+
 DrawBoard *-- CanvasRenderer : creates & owns
 DrawBoard o-- BaseShape : stores and manages (drawObjects)
+DrawBoard --> ConstraintSystem : creates & owns
+DrawBoard --> LetterDrawer : uses
+
 CanvasRenderer --> Camera : uses
 CanvasRenderer --> BaseShape : requests Display List (IR) from
+CanvasRenderer --> HitTester : uses for hit-testing
+
+note right of CanvasRenderer
+    Rendering is fully decoupled from domain model shapes.
+    Consumes display lists from shapes.
+end note
+HitTester --> BaseShape : hit-test using display list
+note right of HitTester
+    Centralized hit-testing logic
+    Operates on display list primitives
+end note
 
 ConstraintSystem *-- GCS : creates & uses
 GCS --> BaseNonLinearSolver : uses

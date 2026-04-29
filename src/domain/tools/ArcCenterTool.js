@@ -31,11 +31,11 @@ export class ArcCenterTool extends BaseTool {
                 fixed: false
             });
             this.pCenter = { id: centerId, x: worldVec.x, y: worldVec.y };
-            
-            let centerPointObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(worldVec.x, worldVec.y, 0, 1));
+
+            let centerPointObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
             centerPointObj.constraintId = centerId;
             this.drawBoard.drawObjects.push(centerPointObj);
-            
+
             this.step = "placeStart";
 
         } else if (this.step === "placeStart") {
@@ -46,7 +46,7 @@ export class ArcCenterTool extends BaseTool {
             });
             this.pStart = { id: startId, x: worldVec.x, y: worldVec.y };
 
-            let startPointObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(worldVec.x, worldVec.y, 0, 1));
+            let startPointObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
             startPointObj.constraintId = startId;
             this.drawBoard.drawObjects.push(startPointObj);
 
@@ -87,11 +87,11 @@ export class ArcCenterTool extends BaseTool {
             // We just let the Arc hold its fixed values for now.
 
             let centerPointObj = this.drawBoard.drawObjects.find(o => o.constraintId === this.pCenter.id);
-            let arcObj = new DrawArc(this.drawBoard.context, this.drawBoard.camera, centerPointObj, radius, startAngle, endAngle);
+            let arcObj = new DrawArc(centerPointObj, radius, startAngle, endAngle);
             arcObj.constraintId = arcId;
 
             this.drawBoard.drawObjects.push(arcObj);
-            
+
             // Clean up temps
             this.reset();
         }

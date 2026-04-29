@@ -38,7 +38,7 @@ describe("Phase 4: Render Pipeline & Camera Assertions", () => {
 
     it("should correctly apply standard Panning (move) to World Vectors going to Screen space", () => {
         // Place a point at World (100, 100)
-        let point = new Point(mockCtx, camera, new Vec4(100, 100, 0, 1));
+        let point = new Point(new Vec4(100, 100, 0, 1));
         
         // Pan the camera +50x, +20y
         camera.moveX(50);
@@ -57,7 +57,7 @@ describe("Phase 4: Render Pipeline & Camera Assertions", () => {
     });
 
     it("should correctly apply Zooming (scaling from an origin) to World Vectors", () => {
-        let point = new Point(mockCtx, camera, new Vec4(20, 20, 0, 1));
+        let point = new Point(new Vec4(20, 20, 0, 1));
         
         // Zoom by 2x from Screen position (0, 0)
         camera.zoom(2.0, 0, 0); 
@@ -87,10 +87,10 @@ describe("Phase 4: Render Pipeline & Camera Assertions", () => {
     });
 
     it("should draw two connected points as a line with the correct world-to-screen matrix transformations", () => {
-        let startPoint = new Point(mockCtx, camera, new Vec4(0, 0, 0, 1));
-        let endPoint = new Point(mockCtx, camera, new Vec4(10, 10, 0, 1));
+        let startPoint = new Point(new Vec4(0, 0, 0, 1));
+        let endPoint = new Point(new Vec4(10, 10, 0, 1));
 
-        let drawLine = new DrawLine(mockCtx, camera, startPoint, endPoint);
+        let drawLine = new DrawLine(startPoint, endPoint);
 
         // Move camera 5 pixels down
         camera.moveY(5);

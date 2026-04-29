@@ -3,8 +3,8 @@ import { BaseShape } from "./BaseShape.js";
 export class Point extends BaseShape {
     vec4;
 
-    constructor(ctx, camera, vec4) {
-        super(ctx, camera);
+    constructor(vec4) {
+        super();
         this.vec4 = vec4;
     }
 
@@ -28,17 +28,7 @@ export class Point extends BaseShape {
         ];
     }
 
-    check(x, y) {
-        let cameraVec4 = this.vec4.mulMatrix(this.camera.getCalcMatrix());
-        let x_ = x - cameraVec4.x;
-        let y_ = y - cameraVec4.y;
-        return Math.sqrt(x_ * x_ + y_ * y_);
-    }
 
-    checkInsideArea(minX, minY, maxX, maxY, requireComplete) {
-        let camPos = this.vec4.mulMatrix(this.camera.getCalcMatrix());
-        return camPos.x >= minX && camPos.x <= maxX && camPos.y >= minY && camPos.y <= maxY;
-    }
 
     /** Ask the PropertyEditor to render this shape's specific properties */
     buildProperties(editor) {

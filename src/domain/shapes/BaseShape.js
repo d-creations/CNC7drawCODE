@@ -8,12 +8,10 @@ export class BaseShape {
      * @param {CanvasRenderingContext2D} ctx The HTML5 Canvas Drawing Context
      * @param {Camera} camera The global Camera handling world translations
      */
-    constructor(ctx, camera) {
+    constructor() {
         if (this.constructor === BaseShape) {
             throw new Error("BaseShape is an abstract class and cannot be instantiated directly.");
         }
-        this.ctx = ctx;
-        this.camera = camera;
         this.color = "red"; // Default normal state color
         this.defaultColor = "red";
     }
@@ -35,9 +33,6 @@ export class BaseShape {
      * @returns {number} The absolute closest distance in calculated pixels. Returns < 9999 if found.
      * @abstract
      */
-    check(x, y) {
-        throw new Error("Method 'check(x, y)' must be implemented by subclasses.");
-    }
 
     /**
      * Hit-box area selection logic.
@@ -50,10 +45,6 @@ export class BaseShape {
      * @returns {boolean} True if inside the area.
      * @abstract
      */
-    checkInsideArea(minX, minY, maxX, maxY, requireComplete) {
-        // By default, shapes (like Measurements) are NOT selected by the drag box unless they override this.
-        return false;
-    }
 
     /** 
      * Self-documents to the Property Editor UI what editable variables it has.
