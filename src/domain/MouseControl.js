@@ -17,6 +17,7 @@ import { DrawLine } from "./shapes/DrawLine.js";
 import { DrawCircle } from "./shapes/DrawCircle.js";
 import { Point } from "./shapes/Point.js";
 import { Vec4 } from "./Camera.js";
+import { HitTester } from "./renderers/HitTester.js";
 
 export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17 };
 
@@ -64,6 +65,7 @@ export class MouseControl{
         this.tempPoints = [];
         this.tempLines = [];
         this.commandRadius = 20; // Default radius input
+        this.draggingAnchor = null; // { shape }
         this.onStateChange = null; 
     }
 
@@ -108,7 +110,45 @@ export class MouseControl{
         }
 
         if(this.buttonState == MouseState.SELECT){
-            this.drawBoard.selectObject(position.x,position.y)
+            // Prefer snapping to Point anchors first (including ephemeral anchors created for textAnchor)
+            const pointHit = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
+            let closest = { dist: Infinity, shape: null };
+            if (pointHit.exist && pointHit.obj && pointHit.obj.isTextAnchor) {
+                const parent = this.drawBoard.drawObjects.find(o => o.constraintId === pointHit.obj.parentMeasurementId);
+                if (parent && parent.isMeasurement) {
+                    closest.shape = parent;
+                    closest.dist = pointHit.dist;
+                }
+            }
+
+            // Fallback: check measurement anchor arcs
+            if (!closest.shape) {
+                for (let obj of this.drawBoard.drawObjects) {
+                    if (!obj.isMeasurement) continue;
+                    const res = HitTester.hitTestWithInstruction(obj.getRenderData(), position.x, position.y, this.drawBoard.camera);
+                    if (res.instruction && res.dist < this.drawBoard.selectDistLampda) {
+                        if (res.instruction.primitive === 'arc' && res.instruction.fill) {
+                            if (res.dist < closest.dist) {
+                                closest.dist = res.dist;
+                                closest.shape = obj;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (closest.shape) {
+                // Start dragging the anchor
+                // begin grouped history so drag counts as one undo step
+                if (this.drawBoard && this.drawBoard.historyManager && typeof this.drawBoard.historyManager.startBatch === 'function') {
+                    this.drawBoard.historyManager.startBatch();
+                }
+                this.draggingAnchor = { shape: closest.shape };
+                this.drawBoard.selectedObjects = [closest.shape];
+                if (this.drawBoard.onSelectionChanged) this.drawBoard.onSelectionChanged(closest.shape);
+            } else {
+                this.drawBoard.selectObject(position.x,position.y)
+            }
         }
         this.mousePressed = true
     }
@@ -144,6 +184,14 @@ export class MouseControl{
         }
 
         if(this.mousePressed){
+            if (this.draggingAnchor && this.draggingAnchor.shape) {
+                // Update anchor position to current world mouse
+                let world = this.drawBoard.camera.getWorldVec(position.x, position.y);
+                this.draggingAnchor.shape.textAnchor = { x: world.x, y: world.y };
+                this.drawBoard.draw();
+                return;
+            }
+
             let currentPosObj = this.drawBoard.selectStartObject(position.x,position.y);
             
             if(this.buttonState == MouseState.LINE){
@@ -339,6 +387,44 @@ export class MouseControl{
         }
 
         this.drawBoard.clearTempObjects(); // Clean out previews
+
+        // Finalize any anchor drag
+            if (this.draggingAnchor && this.draggingAnchor.shape) {
+            const shape = this.draggingAnchor.shape;
+            if (this.drawBoard.constraintSystem) {
+                if (shape.textAnchorPointId) {
+                    let pGeo = this.drawBoard.constraintSystem.geometries.get(shape.textAnchorPointId);
+                    if (pGeo && pGeo.data) {
+                        if (isFinite(shape.textAnchor.x)) pGeo.data.x = Number(shape.textAnchor.x);
+                        if (isFinite(shape.textAnchor.y)) pGeo.data.y = Number(shape.textAnchor.y);
+                        // Reflect moved coords back into the in-memory shape so rendering is immediate
+                        if (isFinite(pGeo.data.x) && isFinite(pGeo.data.y)) {
+                            shape.textAnchor = { x: Number(pGeo.data.x), y: Number(pGeo.data.y) };
+                        }
+                    }
+                } else if (shape.constraintId) {
+                    let geo = this.drawBoard.constraintSystem.geometries.get(shape.constraintId);
+                    if (geo && geo.data) {
+                        // Only write numeric values
+                        if (!geo.data.textAnchor) geo.data.textAnchor = {};
+                        if (isFinite(shape.textAnchor.x)) geo.data.textAnchor.x = Number(shape.textAnchor.x);
+                        if (isFinite(shape.textAnchor.y)) geo.data.textAnchor.y = Number(shape.textAnchor.y);
+                        // Update any ephemeral visual anchor created during loadState
+                        const pObj = this.drawBoard.drawObjects.find(o => o.isTextAnchor && o.parentMeasurementId === shape.constraintId);
+                        if (pObj && pObj.vec4) {
+                            if (isFinite(shape.textAnchor.x)) pObj.vec4.x = Number(shape.textAnchor.x);
+                            if (isFinite(shape.textAnchor.y)) pObj.vec4.y = Number(shape.textAnchor.y);
+                        }
+                    }
+                }
+            }
+                // Save final state (will be coalesced into a single history entry if batching)
+                this.drawBoard.saveState();
+                if (this.drawBoard && this.drawBoard.historyManager && typeof this.drawBoard.historyManager.endBatch === 'function') {
+                    this.drawBoard.historyManager.endBatch();
+                }
+                this.draggingAnchor = null;
+        }
         
         if(this.buttonState === MouseState.MOVE && this.preRightClickState !== undefined) {
             this.buttonState = this.preRightClickState;
