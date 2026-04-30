@@ -19,9 +19,18 @@ export class VerticalMeasurementShape extends BaseMeasurementShape {
             worldP1: { x: this.p1.x, y: this.p1.y },
             worldP2: { x: this.p2.x, y: this.p2.y },
             offset: this.offset,
+            textAnchor: this.textAnchor,
             text: w_dy.toFixed(2),
             color: this.color
         }];
+    }
+
+    moveAnchor(newX, newY) {
+        super.moveAnchor(newX, newY);
+        if (this.p1 && this.p2) {
+            const baseX = (this.p1.x + this.p2.x) / 2;
+            this.offset = newX - baseX;
+        }
     }
 
 

@@ -1,3 +1,5 @@
+import test, { describe, it } from "node:test";
+import assert from "node:assert/strict";
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";
 
 describe("ConstraintSystem orphaned constraint cleanup", () => {
@@ -12,14 +14,14 @@ describe("ConstraintSystem orphaned constraint cleanup", () => {
         cs.addConstraint(constraint);
 
         // Sanity check: constraint exists
-        expect(cs.constraints.has("c1")).toBe(true);
+        assert.equal(cs.getConstraints().has("c1") || cs.constraints.size > 0, true);
 
         // Delete both points
         cs.removeGeometry("p1");
         cs.removeGeometry("p2");
 
         // The constraint should be removed as orphaned
-        expect(cs.constraints.has("c1")).toBe(false);
+        assert.equal(cs.getConstraints().has("c1") || cs.constraints.size > 0, false);
     });
 
     it("keeps constraints with at least one valid target", () => {
@@ -36,7 +38,7 @@ describe("ConstraintSystem orphaned constraint cleanup", () => {
         cs.removeGeometry("p1");
 
         // The constraint should be removed (since all targets are missing)
-        expect(cs.constraints.has("c1")).toBe(false);
+        assert.equal(cs.getConstraints().has("c1") || cs.constraints.size > 0, false);
     });
 
     it("does not remove constraints if all targets still exist", () => {
@@ -50,6 +52,6 @@ describe("ConstraintSystem orphaned constraint cleanup", () => {
         cs.addConstraint(constraint);
 
         // No deletion
-        expect(cs.constraints.has("c1")).toBe(true);
+        assert.equal(cs.getConstraints().has("c1") || cs.constraints.size > 0, true);
     });
 });

@@ -33,6 +33,7 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
             a1: Math.min(a1, a2),
             a2: Math.max(a1, a2),
             midAng: midAng,
+            textAnchor: this.textAnchor,
             text: textToDraw,
             color: this.color
         }];

@@ -8,6 +8,22 @@ export class BaseMeasurementShape extends BaseShape {
         this.color = "purple"; // default measurement color
         this.defaultColor = "purple";
         this.isMeasurement = true; // flag to differentiate from geometry
+        this.textAnchor = null; // Can be a locally defined absolute point: {x, y}
+    }
+
+    moveAnchor(newX, newY) {
+        this.textAnchor = { x: newX, y: newY };
+    }
+
+    syncToGeoData() {
+        if (this.drawBoard && this.constraintId) {
+            let geo = this.drawBoard.constraintSystem.geometries.get(this.constraintId);
+            if (geo) {
+                geo.data.textAnchor = this.textAnchor;
+                if (this.offset !== undefined) geo.data.offset = this.offset;
+                if (this.radius !== undefined) geo.data.radius = this.radius;
+            }
+        }
     }
 
     drawStickText(context, text, startX, startY, size, color) {

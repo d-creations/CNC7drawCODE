@@ -26,10 +26,26 @@ export class LengthMeasurementShape extends BaseMeasurementShape {
                 worldP1: { x: this.p1.x, y: this.p1.y },
                 worldP2: { x: this.p2.x, y: this.p2.y },
                 offset: this.offset,
+                textAnchor: this.textAnchor,
                 text: text,
                 color: this.color
             }
         ];
+    }
+
+    moveAnchor(newX, newY) {
+        super.moveAnchor(newX, newY);
+        if (this.p1 && this.p2) {
+            const dx = this.p2.x - this.p1.x;
+            const dy = this.p2.y - this.p1.y;
+            const ang = Math.atan2(dy, dx);
+            const nx = -Math.sin(ang);
+            const ny = Math.cos(ang);
+            
+            const dxMouse = newX - this.p1.x;
+            const dyMouse = newY - this.p1.y;
+            this.offset = dxMouse * nx + dyMouse * ny;
+        }
     }
 
 

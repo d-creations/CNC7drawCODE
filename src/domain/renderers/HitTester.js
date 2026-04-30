@@ -225,39 +225,55 @@ export class HitTester {
     }
 
     static distToDimensionRadius(instruction, x, y, camera) {
-        const vC = new Vec4(instruction.worldC.x, instruction.worldC.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        const vP = new Vec4(instruction.worldP.x, instruction.worldP.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+        const vC = new Vec4(instruction.worldCenter.x, instruction.worldCenter.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+        const scaledRadius = instruction.worldRadius * camera.getCalcMatrix()[0][0];
         
-        const dx = vP.x - vC.x;
-        const dy = vP.y - vC.y;
-        const screenLen = Math.sqrt(dx * dx + dy * dy);
-        if (screenLen < 1) return Infinity;
-        
-        // Extended line
-        const rLen = screenLen + 30; // visually extending out
-        const ex2 = vC.x + (dx / screenLen) * rLen;
-        const ey2 = vC.y + (dy / screenLen) * rLen;
+        let screenAng = -instruction.angle;
+        let lx, ly;
 
-        let num = Math.abs((ex2 - vP.x) * (vP.y - y) - (vP.x - x) * (ey2 - vP.y));
-        let chunkLen = 30; // Length of the pointer slice
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+            lx = anchorCam.x;
+            ly = anchorCam.y;
+            let dx = lx - vC.x;
+            let dy = ly - vC.y;
+            screenAng = Math.atan2(dy, dx);
+        } else {
+            const extLen = 20;
+            lx = vC.x + Math.cos(screenAng) * (scaledRadius + extLen);
+            ly = vC.y + Math.sin(screenAng) * (scaledRadius + extLen);
+        }
+
+        const sx = vC.x + Math.cos(screenAng) * scaledRadius;
+        const sy = vC.y + Math.sin(screenAng) * scaledRadius;
+        
+        let num = Math.abs((lx - vC.x) * (vC.y - y) - (vC.x - x) * (ly - vC.y));
+        let chunkLen = Math.sqrt(Math.pow(lx - vC.x, 2) + Math.pow(ly - vC.y, 2));
+        if (chunkLen < 1) return Infinity;
         let d = num / chunkLen;
 
-        let dotProduct = ((x - vP.x) * (ex2 - vP.x) + (y - vP.y) * (ey2 - vP.y)) / chunkLen;
+        let dotProduct = ((x - vC.x) * (lx - vC.x) + (y - vC.y) * (ly - vC.y)) / chunkLen;
         if (dotProduct < -20 || dotProduct > chunkLen + 20) return Infinity;
         return d;
     }
 
     static distToDimensionAngle(instruction, x, y, camera) {
-        const intersection = new Vec4(instruction.worldInt.x, instruction.worldInt.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+        const intersection = new Vec4(instruction.worldIntersection.x, instruction.worldIntersection.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const radius = instruction.radius || 40;
+        
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+            let distToText = Math.sqrt(Math.pow(x - anchorCam.x, 2) + Math.pow(y - anchorCam.y, 2));
+            if (distToText < 20) return distToText; // Allow selecting by clicking the dragged text anchor
+        }
         
         const distToCenter = Math.sqrt(Math.pow(x - intersection.x, 2) + Math.pow(y - intersection.y, 2));
         
         let angle = Math.atan2(y - intersection.y, x - intersection.x);
         if (angle < 0) angle += 2 * Math.PI;
 
-        const startAng = instruction.startAngle;
-        const endAng = instruction.endAngle;
+        const startAng = instruction.a1;
+        const endAng = instruction.a2;
 
         let inSector = false;
         if (startAng < endAng) {

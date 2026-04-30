@@ -17,6 +17,7 @@ export class RadiusMeasurementShape extends BaseMeasurementShape {
             worldCenter: { x: this.circle.centerPoint.vec4.x, y: this.circle.centerPoint.vec4.y },
             worldRadius: this.circle.radius,
             angle: this.angle,
+            textAnchor: this.textAnchor,
             text: 'R' + this.circle.radius.toFixed(2),
             color: this.color
         }];

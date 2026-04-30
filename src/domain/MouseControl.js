@@ -109,6 +109,12 @@ export class MouseControl{
 
         if(this.buttonState == MouseState.SELECT){
             this.drawBoard.selectObject(position.x,position.y)
+            let selected = this.drawBoard.selectedObjects;
+            if (selected && selected.length === 1 && selected[0].isMeasurement) {
+                this.activeDragItem = selected[0];
+            } else {
+                this.activeDragItem = null;
+            }
         }
         this.mousePressed = true
     }
@@ -194,23 +200,32 @@ export class MouseControl{
                 this.movePos = position
             }
             else if(this.buttonState == MouseState.SELECT){
-                if (!this.drawBoard.selectionBox) {
-                    this.drawBoard.selectionBox = { active: true, startX: this.downPosition.x, startY: this.downPosition.y, endX: position.x, endY: position.y };
+                if (this.activeDragItem && this.activeDragItem.isMeasurement) {
+                    let worldVec = this.drawBoard.camera.getWorldVec(position.x, position.y);
+                    if (this.activeDragItem.moveAnchor) {
+                        this.activeDragItem.moveAnchor(worldVec.x, worldVec.y);
+                        if (this.activeDragItem.syncToGeoData) this.activeDragItem.syncToGeoData();
+                    }
+                    this.drawBoard.draw();
                 } else {
-                    this.drawBoard.selectionBox.endX = position.x;
-                    this.drawBoard.selectionBox.endY = position.y;
+                    if (!this.drawBoard.selectionBox) {
+                        this.drawBoard.selectionBox = { active: true, startX: this.downPosition.x, startY: this.downPosition.y, endX: position.x, endY: position.y };
+                    } else {
+                        this.drawBoard.selectionBox.endX = position.x;
+                        this.drawBoard.selectionBox.endY = position.y;
+                    }
+                    
+                    // Real-time preview of selection colors while dragging
+                    this.drawBoard.selectObjectsInArea(
+                        this.drawBoard.selectionBox.startX,
+                        this.drawBoard.selectionBox.startY,
+                        this.drawBoard.selectionBox.endX,
+                        this.drawBoard.selectionBox.endY,
+                        true // previewOnly flag skip heavy UI reconstruction
+                    );
+                    
+                    this.drawBoard.draw();
                 }
-                
-                // Real-time preview of selection colors while dragging
-                this.drawBoard.selectObjectsInArea(
-                    this.drawBoard.selectionBox.startX,
-                    this.drawBoard.selectionBox.startY,
-                    this.drawBoard.selectionBox.endX,
-                    this.drawBoard.selectionBox.endY,
-                    true // previewOnly flag skip heavy UI reconstruction
-                );
-                
-                this.drawBoard.draw();
             }
         }
         else {
@@ -325,6 +340,10 @@ export class MouseControl{
 
     mouseUp(position) {
         this.mousePressed = false
+        
+        if (this.activeDragItem) {
+            this.activeDragItem = null;
+        }
         
         if(this.buttonState == MouseState.SELECT && this.drawBoard.selectionBox && this.drawBoard.selectionBox.active){
             // Box selection complete

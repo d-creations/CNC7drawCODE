@@ -396,6 +396,7 @@ export class DrawBoard{
                     let LM = new LengthMeasurementShape(this, p1, p2);
                     LM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) LM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) LM.textAnchor = geo.data.textAnchor;
                     this.drawObjects.push(LM);
                 }
             } else if (geo.type === "HorizontalMeasurement") {
@@ -405,6 +406,7 @@ export class DrawBoard{
                     let HM = new HorizontalMeasurementShape(this, p1, p2);
                     HM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) HM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) HM.textAnchor = geo.data.textAnchor;
                     this.drawObjects.push(HM);
                 }
             } else if (geo.type === "VerticalMeasurement") {
@@ -414,6 +416,7 @@ export class DrawBoard{
                     let VM = new VerticalMeasurementShape(this, p1, p2);
                     VM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) VM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) VM.textAnchor = geo.data.textAnchor;
                     this.drawObjects.push(VM);
                 }
             } else if (geo.type === "AngleMeasurement") {
@@ -424,6 +427,7 @@ export class DrawBoard{
                     let AM = new AngleMeasurementShape(this, l1, l2);
                     AM.constraintId = geo.id;
                     if (geo.data.radius !== undefined) AM.radius = geo.data.radius;
+                    if (geo.data.textAnchor !== undefined) AM.textAnchor = geo.data.textAnchor;
                     this.drawObjects.push(AM);
                 }
             } else if (geo.type === "RadiusMeasurement") {
@@ -433,6 +437,7 @@ export class DrawBoard{
                     RM.constraintId = geo.id;
                     if (geo.data.angle !== undefined) RM.angle = geo.data.angle;
                     if (geo.data.offset !== undefined) RM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) RM.textAnchor = geo.data.textAnchor;
                     this.drawObjects.push(RM);
                 }
             }

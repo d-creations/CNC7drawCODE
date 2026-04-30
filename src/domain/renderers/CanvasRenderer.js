@@ -159,8 +159,22 @@ export class CanvasRenderer {
 
         this.ctx.stroke();
 
-        const midX = (ex1 + ex2) / 2;
-        const midY = (ey1 + ey2) / 2;
+        let midX = (ex1 + ex2) / 2;
+        let midY = (ey1 + ey2) / 2;
+        
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(this.camera.getCalcMatrix());
+            midX = anchorCam.x;
+            midY = anchorCam.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo((ex1+ex2)/2, (ey1+ey2)/2);
+            this.ctx.lineTo(midX, midY);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(midX, midY, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "purple";
+            this.ctx.fill();
+        }
 
         this.ctx.translate(midX, midY);
         // keep text upright
@@ -230,8 +244,22 @@ export class CanvasRenderer {
 
         this.ctx.stroke();
 
-        const midX = (ex1 + ex2) / 2;
-        const midY = ey;
+        let midX = (ex1 + ex2) / 2;
+        let midY = ey;
+        
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(this.camera.getCalcMatrix());
+            midX = anchorCam.x;
+            midY = anchorCam.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo((ex1+ex2)/2, ey);
+            this.ctx.lineTo(midX, midY);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(midX, midY, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "purple";
+            this.ctx.fill();
+        }
 
         this.ctx.translate(midX, midY);
         
@@ -296,8 +324,22 @@ export class CanvasRenderer {
 
         this.ctx.stroke();
 
-        const midX = ex;
-        const midY = (ey1 + ey2) / 2;
+        let midX = ex;
+        let midY = (ey1 + ey2) / 2;
+        
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(this.camera.getCalcMatrix());
+            midX = anchorCam.x;
+            midY = anchorCam.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo(ex, (ey1+ey2)/2);
+            this.ctx.lineTo(midX, midY);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(midX, midY, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "purple";
+            this.ctx.fill();
+        }
 
         this.ctx.translate(midX, midY);
         this.ctx.rotate(-Math.PI / 2);
@@ -318,17 +360,27 @@ export class CanvasRenderer {
         this.ctx.strokeStyle = instruction.color || "purple";
         this.ctx.lineWidth = 1;
 
-        const screenAng = -instruction.angle; 
+        let screenAng = -instruction.angle; 
+        let lx, ly;
+
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(this.camera.getCalcMatrix());
+            lx = anchorCam.x;
+            ly = anchorCam.y;
+            let dx = lx - centerCam.x;
+            let dy = ly - centerCam.y;
+            screenAng = Math.atan2(dy, dx);
+        } else {
+            const extLen = 20;
+            lx = centerCam.x + Math.cos(screenAng) * (scaledRadius + extLen);
+            ly = centerCam.y + Math.sin(screenAng) * (scaledRadius + extLen);
+        }
+
         const sx = centerCam.x + Math.cos(screenAng) * scaledRadius;
         const sy = centerCam.y + Math.sin(screenAng) * scaledRadius;
 
         this.ctx.beginPath();
         this.ctx.moveTo(centerCam.x, centerCam.y);
-        
-        const extLen = 20;
-        const lx = centerCam.x + Math.cos(screenAng) * (scaledRadius + extLen);
-        const ly = centerCam.y + Math.sin(screenAng) * (scaledRadius + extLen);
-        
         this.ctx.lineTo(lx, ly);
 
         const arrowSize = 10;
@@ -347,6 +399,13 @@ export class CanvasRenderer {
 
         this.ctx.translate(lx, ly);
         
+        if (instruction.textAnchor) {
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "purple";
+            this.ctx.fill();
+        }
+
         const charSize = 8;
         this.drawStickText(instruction.text, 5, -charSize/2, charSize, instruction.color || "purple");
 
@@ -364,8 +423,24 @@ export class CanvasRenderer {
         this.ctx.arc(interScr.x, interScr.y, instruction.radius, instruction.a1, instruction.a2);
         this.ctx.stroke();
 
-        const textX = interScr.x + Math.cos(instruction.midAng) * (instruction.radius + 15);
-        const textY = interScr.y + Math.sin(instruction.midAng) * (instruction.radius + 15);
+        let textX = interScr.x + Math.cos(instruction.midAng) * (instruction.radius + 15);
+        let textY = interScr.y + Math.sin(instruction.midAng) * (instruction.radius + 15);
+
+        if (instruction.textAnchor) {
+            let anchorCam = new Vec4(instruction.textAnchor.x, instruction.textAnchor.y, 0, 1).mulMatrix(this.camera.getCalcMatrix());
+            let lineStartX = textX;
+            let lineStartY = textY;
+            textX = anchorCam.x;
+            textY = anchorCam.y;
+            this.ctx.beginPath();
+            this.ctx.moveTo(lineStartX, lineStartY);
+            this.ctx.lineTo(textX, textY);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(textX, textY, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = "purple";
+            this.ctx.fill();
+        }
 
         const charSize = 8;
         const textWidth = instruction.text.length * charSize * 1.5;
