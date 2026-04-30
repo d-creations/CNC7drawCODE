@@ -150,6 +150,18 @@ export class ConstraintSystem {
             this.constraints.delete(cId);
         }
 
+        // 4. Remove orphaned constraints (constraints whose targets are all missing)
+        let orphanedConstraints = [];
+        for (let [cId, constraint] of this.constraints) {
+            // If all targets are missing from geometries, the constraint is orphaned
+            if (constraint.targets.every(t => !this.geometries.has(t))) {
+                orphanedConstraints.push(cId);
+            }
+        }
+        for (let cId of orphanedConstraints) {
+            this.constraints.delete(cId);
+        }
+
         this.buildGraph();
         return Array.from(deletedGeoIds);
     }

@@ -182,11 +182,14 @@ export class HitTester {
         const screenLen = rightP.x - leftP.x;
         if (screenLen < 1) return Infinity;
 
+        // Renderer places the horizontal dimension at the middle Y (baseY) + offset
         const offset = instruction.offset || 20;
+        const baseY = (v1.y + v2.y) / 2;
+        const ey = baseY + offset;
         const ex1 = leftP.x;
-        const ey1 = leftP.y - offset;
+        const ey1 = ey;
         const ex2 = rightP.x;
-        const ey2 = leftP.y - offset; // horizontal constraint implies y remains constant on the dimension line visual
+        const ey2 = ey; // horizontal constraint implies y remains constant on the dimension line visual
 
         let num = Math.abs((ex2 - ex1) * (ey1 - y) - (ex1 - x) * (ey2 - ey1));
         let d = num / screenLen;
@@ -204,10 +207,13 @@ export class HitTester {
         const screenLen = bottomP.y - topP.y;
         if (screenLen < 1) return Infinity;
 
+        // Renderer places the vertical dimension at the middle X (baseX) + offset
         const offset = instruction.offset || 20;
-        const ex1 = topP.x + offset;
+        const baseX = (v1.x + v2.x) / 2;
+        const ex = baseX + offset;
+        const ex1 = ex;
         const ey1 = topP.y;
-        const ex2 = topP.x + offset;
+        const ex2 = ex;
         const ey2 = bottomP.y;
 
         let num = Math.abs((ex2 - ex1) * (ey1 - y) - (ex1 - x) * (ey2 - ey1));

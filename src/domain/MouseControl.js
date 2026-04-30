@@ -12,6 +12,7 @@ import { AngleMeasurementTool } from "./tools/AngleMeasurementTool.js";
 import { RadiusMeasurementTool } from "./tools/RadiusMeasurementTool.js";
 import { ArcCenterTool } from "./tools/ArcCenterTool.js";
 import { Arc3PTool } from "./tools/Arc3PTool.js";
+import { CircleTool } from "./tools/CircleTool.js";
 import { DrawLine } from "./shapes/DrawLine.js";
 import { DrawCircle } from "./shapes/DrawCircle.js";
 import { Point } from "./shapes/Point.js";
@@ -30,6 +31,7 @@ export class MouseControl{
     // Tools
     pointTool
     lineTool
+    circleTool
     circle3PTool
     circle3TTool
     circle2T1RTool
@@ -46,6 +48,7 @@ export class MouseControl{
         // Instantiate tools with reference to the constraint system
         this.pointTool = new PointTool(drawBoard, drawBoard.constraintSystem);
         this.lineTool = new LineTool(drawBoard, drawBoard.constraintSystem);
+        this.circleTool = new CircleTool(drawBoard, drawBoard.constraintSystem);
         this.circle3PTool = new Circle3PTool(drawBoard, drawBoard.constraintSystem);
         this.circle3TTool = new Circle3TTool(drawBoard, drawBoard.constraintSystem);
         this.circle2T1RTool = new Circle2T1RTool(drawBoard, drawBoard.constraintSystem);
@@ -353,49 +356,10 @@ export class MouseControl{
             this.lineTool.onCanvasClick(position.x, position.y); // end
         }
         if(this.buttonState == MouseState.CIRCLE){
-            // Fix: Re-use snapped points for Circle Center and Edge
-            let startSnapped = this.drawBoard.selectStartObject(this.downPosition.x, this.downPosition.y, ["Point"]);
-            let endSnapped = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
-
-            let startWorld = startSnapped.exist && startSnapped.obj ?
-                startSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) :
-                this.drawBoard.camera.getWorldVec(this.downPosition.x, this.downPosition.y);
-
-            let endWorld = endSnapped.exist && endSnapped.obj ?
-                endSnapped.obj.vec4.mulMatrix(this.drawBoard.camera.getCalcMatrix()) :
-                this.drawBoard.camera.getWorldVec(position.x, position.y);
-
-            // Handle start point (Center)
-            let centerId;
-            let centerPObj;
-            if (startSnapped.exist && startSnapped.obj && startSnapped.obj.constructor.name === "Point") {
-                centerPObj = startSnapped.obj;
-                centerId = centerPObj.constraintId;
-                startWorld = new Vec4(centerPObj.vec4.x, centerPObj.vec4.y, 0, 1);
-            } else {
-                centerId = this.drawBoard.constraintSystem.addGeometry({ type: "Point", data: { x: startWorld.x, y: startWorld.y }, fixed: false });
-                centerPObj = new Point(new Vec4(startWorld.x, startWorld.y, 0, 1));
-                centerPObj.constraintId = centerId;
-                this.drawBoard.drawObjects.push(centerPObj);
-            }
-
-            // Quick inline circle tool porting for standard circle creation
-            let dist = Math.sqrt(Math.pow(endWorld.x - startWorld.x, 2) + Math.pow(endWorld.y - startWorld.y, 2));
-            let circId = this.drawBoard.constraintSystem.addGeometry({ type: "Circle", data: { center: centerId, r: dist }, fixed: false });
-
-            let cObj = new DrawCircle(centerPObj, dist);
-            cObj.constraintId = circId;
-            this.drawBoard.drawObjects.push(cObj);
-
-            // If we snapped to an end point, link them mathematically!
-            if (endSnapped.exist && endSnapped.obj && endSnapped.obj.constructor.name === "Point") {
-                this.drawBoard.constraintSystem.addConstraint({
-                    type: "Coincident", targets: [endSnapped.obj.constraintId, circId]
-                });
-            }
-
+            this.circleTool.onCanvasClick(this.downPosition.x, this.downPosition.y); // center
+            this.circleTool.onCanvasClick(position.x, position.y); // edge
             this.drawBoard.clearTempObjects();
-            this.drawBoard.draw(); // FIX: Trigger screen repaint immediately so we don't have to hit F5
+            this.drawBoard.draw();
         }
         
         // Auto-save on drag release

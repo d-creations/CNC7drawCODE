@@ -78,5 +78,10 @@ export class VerticalMeasurementShape extends BaseMeasurementShape {
             }
             editor.drawBoard.draw();
         });
+        
+        // append inputs and container (was missing)
+        divArea.appendChild(distanceInput);
+        divArea.appendChild(offsetInput);
+        editor.container.appendChild(divArea);
     }
 }

@@ -23,9 +23,8 @@ export class PointTool extends BaseTool {
         });
 
         // 2. Visual View Layer
-        let pObj = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(worldVec.x, worldVec.y, 0, 1));
+        let pObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
         pObj.constraintId = ptId;
-        
         this.drawBoard.drawObjects.push(pObj);
         this.drawBoard.draw(); // Fix: Force immediate render
     }
