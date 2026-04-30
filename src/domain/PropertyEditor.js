@@ -242,6 +242,12 @@ export class PropertyEditor {
             const currentVal = parseFloat(e.target.value);
             if (!isNaN(currentVal)) {
                 lastAppliedValue = currentVal;
+                // Debug: log numeric edits to help trace coordinate interpretation issues
+                try {
+                    console.debug("PropertyEditor.applyValue", { name, value: currentVal, objType: this.selectedObject ? this.selectedObject.constructor.name : null });
+                } catch (err) {
+                    // ignore logging errors in environments without console
+                }
                 onChangeCallback(currentVal);
             }
         };

@@ -9,6 +9,8 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         this.l1 = line1;
         this.l2 = line2;
         this.radius = 40; // visuals radius
+        this.textAnchor = null;
+        this.anchorRadius = 6;
         this.type = "AngleMeasurement";
     }
 
@@ -26,7 +28,12 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         const textToDraw = deg + ' deg';
         const midAng = (a1 + a2) / 2;
 
-        return [{
+        const defaultAnchorX = intersection.x + Math.cos(midAng) * (this.radius + 30);
+        const defaultAnchorY = intersection.y + Math.sin(midAng) * (this.radius + 30);
+        const anchorX = this.textAnchor ? this.textAnchor.x : defaultAnchorX;
+        const anchorY = this.textAnchor ? this.textAnchor.y : defaultAnchorY;
+
+        const dimInstr = {
             primitive: 'dimension_angle',
             worldIntersection: { x: intersection.x, y: intersection.y },
             radius: this.radius,
@@ -35,7 +42,28 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
             midAng: midAng,
             text: textToDraw,
             color: this.color
-        }];
+        };
+        if (this.textAnchor) dimInstr.textAnchor = { x: this.textAnchor.x, y: this.textAnchor.y };
+
+        const leaderInstr = {
+            primitive: 'line',
+            worldStartX: intersection.x + Math.cos(midAng) * this.radius,
+            worldStartY: intersection.y + Math.sin(midAng) * this.radius,
+            worldEndX: anchorX,
+            worldEndY: anchorY,
+            color: this.color
+        };
+
+        const anchorInstr = {
+            primitive: 'arc',
+            worldX: anchorX,
+            worldY: anchorY,
+            radius: this.anchorRadius,
+            fill: true,
+            color: this.color
+        };
+
+        return [dimInstr, leaderInstr, anchorInstr];
     }
 
 
@@ -124,6 +152,64 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         
         divArea.appendChild(radiusInput);
         divArea.appendChild(angleConstraintInput);
+
+        // Text anchor controls
+        const intersectionPoint = Geometry.lineIntersection(this.l1, this.l2);
+        let defaultAnchorX = 0, defaultAnchorY = 0;
+        if (intersectionPoint) {
+            defaultAnchorX = intersectionPoint.x + Math.cos(midAng) * (this.radius + 30);
+            defaultAnchorY = intersectionPoint.y + Math.sin(midAng) * (this.radius + 30);
+        }
+        const initialX = this.textAnchor ? this.textAnchor.x : defaultAnchorX;
+        const initialY = this.textAnchor ? this.textAnchor.y : defaultAnchorY;
+
+            this.appendAnchorFields(divArea, editor, initialX, initialY,
+                (val) => {
+                    this.textAnchor = this.textAnchor || {};
+                    this.textAnchor.x = val;
+                    if (!isFinite(this.textAnchor.y)) this.textAnchor.y = initialY;
+                    if (this.textAnchorPointId) {
+                        const pGeo = editor.drawBoard.constraintSystem.geometries.get(this.textAnchorPointId);
+                        if (pGeo && pGeo.data) pGeo.data.x = Number(val);
+                        const pObj = editor.drawBoard.drawObjects.find(o => o.constraintId === this.textAnchorPointId);
+                        if (pObj && pObj.vec4) pObj.vec4.x = Number(val);
+                        editor.drawBoard.saveState();
+                    } else {
+                        // update ephemeral visual anchor (created during loadState) if present
+                        const pObj = editor.drawBoard.drawObjects.find(o => o.isTextAnchor && o.parentMeasurementId === this.constraintId);
+                        if (pObj && pObj.vec4) pObj.vec4.x = Number(val);
+                        if (this.constraintId) { let geo = editor.drawBoard.constraintSystem.geometries.get(this.constraintId); if (geo) { geo.data.textAnchor = this.textAnchor; editor.drawBoard.saveState(); } }
+                    }
+                    editor.drawBoard.draw();
+                },
+                (val) => {
+                    this.textAnchor = this.textAnchor || {};
+                    this.textAnchor.y = val;
+                    if (!isFinite(this.textAnchor.x)) this.textAnchor.x = initialX;
+                    if (this.textAnchorPointId) {
+                        const pGeo = editor.drawBoard.constraintSystem.geometries.get(this.textAnchorPointId);
+                        if (pGeo && pGeo.data) pGeo.data.y = Number(val);
+                        const pObj = editor.drawBoard.drawObjects.find(o => o.constraintId === this.textAnchorPointId);
+                        if (pObj && pObj.vec4) pObj.vec4.y = Number(val);
+                        editor.drawBoard.saveState();
+                    } else {
+                        const pObj = editor.drawBoard.drawObjects.find(o => o.isTextAnchor && o.parentMeasurementId === this.constraintId);
+                        if (pObj && pObj.vec4) pObj.vec4.y = Number(val);
+                        if (this.constraintId) { let geo = editor.drawBoard.constraintSystem.geometries.get(this.constraintId); if (geo) { geo.data.textAnchor = this.textAnchor; editor.drawBoard.saveState(); } }
+                    }
+                    editor.drawBoard.draw();
+                }
+            );
+        // Add optional button to convert this text anchor into a solver-aware Point geometry
+        let anchorBtn = document.createElement('button');
+        anchorBtn.textContent = 'Make anchor a geometry';
+        anchorBtn.onclick = () => {
+            const x = this.textAnchor ? this.textAnchor.x : initialX;
+            const y = this.textAnchor ? this.textAnchor.y : initialY;
+            editor.drawBoard.createTextAnchorGeometry(this, x, y);
+        };
+        divArea.appendChild(anchorBtn);
+
         editor.container.appendChild(divArea);
     }
 }

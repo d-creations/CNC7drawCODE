@@ -268,6 +268,39 @@ export class DrawBoard{
         this.clipboardManager.insertClipboard();
     }
 
+    /**
+     * Create a dedicated Point geometry to store a measurement text anchor so it becomes part of the solver
+     * @param {object} shape - measurement shape instance
+     * @param {number} x
+     * @param {number} y
+     */
+    createTextAnchorGeometry(shape, x, y) {
+        if (!this.constraintSystem) return null;
+        // Create new point geometry in constraint system
+        const ptId = this.constraintSystem.addGeometry({ type: "Point", data: { x: x, y: y }, fixed: false });
+        // Create visual point and attach
+        const pObj = new Point(new Vec4(x, y, 0, 1));
+        pObj.constraintId = ptId;
+        this.drawObjects.push(pObj);
+
+        // Link shape to this anchor geometry
+        shape.textAnchorPointId = ptId;
+        shape.textAnchor = { x: Number(x), y: Number(y) };
+
+        // Also update measurement geometry JSON so the linkage persists immediately
+        if (shape.constraintId) {
+            const mGeo = this.constraintSystem.geometries.get(shape.constraintId);
+            if (mGeo && mGeo.data) {
+                mGeo.data.textAnchorPointId = ptId;
+                mGeo.data.textAnchor = { x: Number(x), y: Number(y) };
+            }
+        }
+
+        this.saveState();
+        this.draw();
+        return ptId;
+    }
+
     undo() {
         let state = this.historyManager.undo();
         if (state) {
@@ -396,7 +429,26 @@ export class DrawBoard{
                     let LM = new LengthMeasurementShape(this, p1, p2);
                     LM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) LM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) LM.textAnchor = geo.data.textAnchor;
+                    if (geo.data.textAnchorPointId !== undefined) {
+                        LM.textAnchorPointId = geo.data.textAnchorPointId;
+                        // If the referenced point visual exists, hydrate anchor coords
+                        const anchorPointObj = uiMap.get(geo.data.textAnchorPointId) || this.drawObjects.find(o => o.constraintId === geo.data.textAnchorPointId);
+                        if (anchorPointObj && anchorPointObj.vec4) {
+                            LM.textAnchor = { x: anchorPointObj.vec4.x, y: anchorPointObj.vec4.y };
+                        }
+                    }
                     this.drawObjects.push(LM);
+                    // If there is an inline textAnchor but no dedicated Point geometry, create a visual anchor Point
+                    if (geo.data.textAnchor !== undefined && geo.data.textAnchorPointId === undefined) {
+                        const ta = geo.data.textAnchor;
+                        if (isFinite(ta.x) && isFinite(ta.y)) {
+                            const pObj = new Point(new Vec4(ta.x, ta.y, 0, 1));
+                            pObj.isTextAnchor = true;
+                            pObj.parentMeasurementId = geo.id;
+                            this.drawObjects.push(pObj);
+                        }
+                    }
                 }
             } else if (geo.type === "HorizontalMeasurement") {
                 let p1 = this.drawObjects.find(o => o.constraintId === geo.data.p1Id) || geo.data.p1;
@@ -405,6 +457,14 @@ export class DrawBoard{
                     let HM = new HorizontalMeasurementShape(this, p1, p2);
                     HM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) HM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) HM.textAnchor = geo.data.textAnchor;
+                    if (geo.data.textAnchorPointId !== undefined) {
+                        HM.textAnchorPointId = geo.data.textAnchorPointId;
+                        const anchorPointObj = uiMap.get(geo.data.textAnchorPointId) || this.drawObjects.find(o => o.constraintId === geo.data.textAnchorPointId);
+                        if (anchorPointObj && anchorPointObj.vec4) {
+                            HM.textAnchor = { x: anchorPointObj.vec4.x, y: anchorPointObj.vec4.y };
+                        }
+                    }
                     this.drawObjects.push(HM);
                 }
             } else if (geo.type === "VerticalMeasurement") {
@@ -414,6 +474,14 @@ export class DrawBoard{
                     let VM = new VerticalMeasurementShape(this, p1, p2);
                     VM.constraintId = geo.id;
                     if (geo.data.offset !== undefined) VM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) VM.textAnchor = geo.data.textAnchor;
+                    if (geo.data.textAnchorPointId !== undefined) {
+                        VM.textAnchorPointId = geo.data.textAnchorPointId;
+                        const anchorPointObj = uiMap.get(geo.data.textAnchorPointId) || this.drawObjects.find(o => o.constraintId === geo.data.textAnchorPointId);
+                        if (anchorPointObj && anchorPointObj.vec4) {
+                            VM.textAnchor = { x: anchorPointObj.vec4.x, y: anchorPointObj.vec4.y };
+                        }
+                    }
                     this.drawObjects.push(VM);
                 }
             } else if (geo.type === "AngleMeasurement") {
@@ -424,7 +492,24 @@ export class DrawBoard{
                     let AM = new AngleMeasurementShape(this, l1, l2);
                     AM.constraintId = geo.id;
                     if (geo.data.radius !== undefined) AM.radius = geo.data.radius;
+                    if (geo.data.textAnchor !== undefined) AM.textAnchor = geo.data.textAnchor;
+                    if (geo.data.textAnchorPointId !== undefined) {
+                        AM.textAnchorPointId = geo.data.textAnchorPointId;
+                        const anchorPointObj = uiMap.get(geo.data.textAnchorPointId) || this.drawObjects.find(o => o.constraintId === geo.data.textAnchorPointId);
+                        if (anchorPointObj && anchorPointObj.vec4) {
+                            AM.textAnchor = { x: anchorPointObj.vec4.x, y: anchorPointObj.vec4.y };
+                        }
+                    }
                     this.drawObjects.push(AM);
+                    if (geo.data.textAnchor !== undefined && geo.data.textAnchorPointId === undefined) {
+                        const ta = geo.data.textAnchor;
+                        if (isFinite(ta.x) && isFinite(ta.y)) {
+                            const pObj = new Point(new Vec4(ta.x, ta.y, 0, 1));
+                            pObj.isTextAnchor = true;
+                            pObj.parentMeasurementId = geo.id;
+                            this.drawObjects.push(pObj);
+                        }
+                    }
                 }
             } else if (geo.type === "RadiusMeasurement") {
                 let circ = this.drawObjects.find(o => o.constraintId === geo.data.circleId);
@@ -433,7 +518,24 @@ export class DrawBoard{
                     RM.constraintId = geo.id;
                     if (geo.data.angle !== undefined) RM.angle = geo.data.angle;
                     if (geo.data.offset !== undefined) RM.offset = geo.data.offset;
+                    if (geo.data.textAnchor !== undefined) RM.textAnchor = geo.data.textAnchor;
+                    if (geo.data.textAnchorPointId !== undefined) {
+                        RM.textAnchorPointId = geo.data.textAnchorPointId;
+                        const anchorPointObj = uiMap.get(geo.data.textAnchorPointId) || this.drawObjects.find(o => o.constraintId === geo.data.textAnchorPointId);
+                        if (anchorPointObj && anchorPointObj.vec4) {
+                            RM.textAnchor = { x: anchorPointObj.vec4.x, y: anchorPointObj.vec4.y };
+                        }
+                    }
                     this.drawObjects.push(RM);
+                    if (geo.data.textAnchor !== undefined && geo.data.textAnchorPointId === undefined) {
+                        const ta = geo.data.textAnchor;
+                        if (isFinite(ta.x) && isFinite(ta.y)) {
+                            const pObj = new Point(new Vec4(ta.x, ta.y, 0, 1));
+                            pObj.isTextAnchor = true;
+                            pObj.parentMeasurementId = geo.id;
+                            this.drawObjects.push(pObj);
+                        }
+                    }
                 }
             }
         }
@@ -481,8 +583,45 @@ export class DrawBoard{
                                 obj.endpoint.vec4.y = endData.y;
                             }
                         }
+                        else if (obj.isMeasurement && obj.constraintId) {
+                            // Pull textAnchor or anchor point link from geometry JSON and ensure numeric values
+                            if (geoData.textAnchor !== undefined && geoData.textAnchor !== null) {
+                                const ta = geoData.textAnchor;
+                                if (isFinite(ta.x) && isFinite(ta.y)) obj.textAnchor = { x: Number(ta.x), y: Number(ta.y) };
+                            }
+                            if (geoData.textAnchorPointId !== undefined) {
+                                const pData = this.constraintSystem.geometries.get(geoData.textAnchorPointId)?.data;
+                                if (pData && isFinite(pData.x) && isFinite(pData.y)) obj.textAnchor = { x: Number(pData.x), y: Number(pData.y) };
+                                obj.textAnchorPointId = geoData.textAnchorPointId;
+                            }
+
+                            // Keep any ephemeral visual anchor Points (created during loadState) in sync
+                            if (obj.textAnchor) {
+                                for (let v of this.drawObjects) {
+                                    if (v.isTextAnchor && v.parentMeasurementId === obj.constraintId && v.vec4) {
+                                        v.vec4.x = obj.textAnchor.x;
+                                        v.vec4.y = obj.textAnchor.y;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+            // Propagate any manual moves of ephemeral text-anchor Points back into their measurement shapes
+            for (let v of this.drawObjects) {
+                if (v.isTextAnchor && v.parentMeasurementId && v.vec4) {
+                    const meas = this.drawObjects.find(o => o.constraintId === v.parentMeasurementId);
+                    if (meas && meas.isMeasurement) {
+                        // Update measurement render state
+                        meas.textAnchor = { x: v.vec4.x, y: v.vec4.y };
+                        // Also update geometry JSON if present so next save persists it
+                        const geo = this.constraintSystem.geometries.get(meas.constraintId);
+                        if (geo && geo.data) {
+                            geo.data.textAnchor = { x: Number(v.vec4.x), y: Number(v.vec4.y) };
+                        }
+                    }
+                }
+            }
             }
         }
 

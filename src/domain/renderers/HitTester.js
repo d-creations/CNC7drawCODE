@@ -149,6 +149,7 @@ export class HitTester {
     }
 
     static distToDimensionLength(instruction, x, y, camera) {
+        if (!instruction || !instruction.worldP1 || !instruction.worldP2) return Infinity;
         const v1 = new Vec4(instruction.worldP1.x, instruction.worldP1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const v2 = new Vec4(instruction.worldP2.x, instruction.worldP2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const dx = v2.x - v1.x;
@@ -175,6 +176,7 @@ export class HitTester {
     }
 
     static distToDimensionHorizontal(instruction, x, y, camera) {
+        if (!instruction || !instruction.worldP1 || !instruction.worldP2) return Infinity;
         const v1 = new Vec4(instruction.worldP1.x, instruction.worldP1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const v2 = new Vec4(instruction.worldP2.x, instruction.worldP2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const leftP = v1.x < v2.x ? v1 : v2;
@@ -200,6 +202,7 @@ export class HitTester {
     }
 
     static distToDimensionVertical(instruction, x, y, camera) {
+        if (!instruction || !instruction.worldP1 || !instruction.worldP2) return Infinity;
         const v1 = new Vec4(instruction.worldP1.x, instruction.worldP1.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const v2 = new Vec4(instruction.worldP2.x, instruction.worldP2.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const topP = v1.y < v2.y ? v1 : v2;
@@ -225,9 +228,12 @@ export class HitTester {
     }
 
     static distToDimensionRadius(instruction, x, y, camera) {
-        const vC = new Vec4(instruction.worldC.x, instruction.worldC.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+        if (!instruction) return Infinity;
+        const center = instruction.worldCenter || instruction.worldC;
+        if (!center || !instruction.worldP) return Infinity;
+        const vC = new Vec4(center.x, center.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const vP = new Vec4(instruction.worldP.x, instruction.worldP.y, 0, 1).mulMatrix(camera.getCalcMatrix());
-        
+
         const dx = vP.x - vC.x;
         const dy = vP.y - vC.y;
         const screenLen = Math.sqrt(dx * dx + dy * dy);
@@ -248,16 +254,19 @@ export class HitTester {
     }
 
     static distToDimensionAngle(instruction, x, y, camera) {
-        const intersection = new Vec4(instruction.worldInt.x, instruction.worldInt.y, 0, 1).mulMatrix(camera.getCalcMatrix());
+        if (!instruction || !instruction.worldIntersection) return Infinity;
+        const intersection = new Vec4(instruction.worldIntersection.x, instruction.worldIntersection.y, 0, 1).mulMatrix(camera.getCalcMatrix());
         const radius = instruction.radius || 40;
-        
+
         const distToCenter = Math.sqrt(Math.pow(x - intersection.x, 2) + Math.pow(y - intersection.y, 2));
-        
+
         let angle = Math.atan2(y - intersection.y, x - intersection.x);
         if (angle < 0) angle += 2 * Math.PI;
 
-        const startAng = instruction.startAngle;
-        const endAng = instruction.endAngle;
+        const startAng = instruction.a1 !== undefined ? instruction.a1 : instruction.startAngle;
+        const endAng = instruction.a2 !== undefined ? instruction.a2 : instruction.endAngle;
+
+        if (startAng === undefined || endAng === undefined) return Infinity;
 
         let inSector = false;
         if (startAng < endAng) {
@@ -268,5 +277,35 @@ export class HitTester {
 
         if (!inSector) return Infinity;
         return Math.abs(distToCenter - radius);
+    }
+
+    // Return both distance and the matching instruction for a displayList
+    static hitTestWithInstruction(displayList, x, y, camera) {
+        let minDist = Infinity;
+        let bestInstr = null;
+        for (const instruction of displayList) {
+            let dist = Infinity;
+            if (instruction.primitive === 'line') {
+                dist = HitTester.distToLine(instruction, x, y, camera);
+            } else if (instruction.primitive === 'arc') {
+                dist = HitTester.distToArc(instruction, x, y, camera);
+            } else if (instruction.primitive === 'dimension_length') {
+                dist = HitTester.distToDimensionLength(instruction, x, y, camera);
+            } else if (instruction.primitive === 'dimension_horizontal') {
+                dist = HitTester.distToDimensionHorizontal(instruction, x, y, camera);
+            } else if (instruction.primitive === 'dimension_vertical') {
+                dist = HitTester.distToDimensionVertical(instruction, x, y, camera);
+            } else if (instruction.primitive === 'dimension_radius') {
+                dist = HitTester.distToDimensionRadius(instruction, x, y, camera);
+            } else if (instruction.primitive === 'dimension_angle') {
+                dist = HitTester.distToDimensionAngle(instruction, x, y, camera);
+            }
+
+            if (dist < minDist) {
+                minDist = dist;
+                bestInstr = instruction;
+            }
+        }
+        return { dist: minDist, instruction: bestInstr };
     }
 }

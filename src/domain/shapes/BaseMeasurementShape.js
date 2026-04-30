@@ -36,5 +36,17 @@ export class BaseMeasurementShape extends BaseShape {
         }
     }
 
-    // to be overridden
+    
+    // Append standardized anchor coordinate fields to a given properties container.
+    // container: DOM element to append into
+    // editor: PropertyEditor instance (provides createNumberField)
+    // initialX/initialY: numeric initial values
+    // onXChange/onYChange: callbacks receiving numeric value
+    appendAnchorFields(container, editor, initialX, initialY, onXChange, onYChange) {
+        let anchorXInput = editor.createNumberField("Text X", initialX, onXChange);
+        let anchorYInput = editor.createNumberField("Text Y", initialY, onYChange);
+        container.appendChild(anchorXInput);
+        container.appendChild(anchorYInput);
+    }
+
 }
