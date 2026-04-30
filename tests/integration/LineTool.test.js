@@ -1,10 +1,10 @@
 import test, { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DrawBoard } from "../../src/domain/DrawBoard.js";
+import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";
 import { LineTool } from "../../src/domain/tools/LineTool.js";
-import { Camera } from "../../src/domain/Camera.js";
+import { Camera } from '../../src/domain/viewController/Camera.js';
 
 // Basic global DOM environment shim (if DrawBoard/Camera access window)
 global.window = {};

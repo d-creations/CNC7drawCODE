@@ -1,5 +1,5 @@
 import { BaseMeasurementShape } from "./BaseMeasurementShape.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 export class RadiusMeasurementShape extends BaseMeasurementShape {
     constructor(drawBoard, circle) {

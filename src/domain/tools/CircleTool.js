@@ -1,7 +1,7 @@
 import { BaseTool } from "./BaseTool.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 /**
  * Tool for creating a standard Circle from center point and radius (by dragging).

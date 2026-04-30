@@ -1,6 +1,6 @@
 import { BaseShape } from "./BaseShape.js";
-import { stickFont } from "../LetterDrawer.js";
-import { Vec4 } from "../Camera.js";
+import { stickFont } from '../core/LetterDrawer.js';
+import { Vec4 } from '../viewController/Camera.js';
 
 export class BaseMeasurementShape extends BaseShape {
     constructor() {

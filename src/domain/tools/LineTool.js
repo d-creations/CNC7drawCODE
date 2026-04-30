@@ -1,7 +1,7 @@
 import { BaseTool } from "./BaseTool.js";
 import { Point } from "../shapes/Point.js";
 import { DrawLine } from "../shapes/DrawLine.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 /**
  * Tool for creating standard constrained Lines.

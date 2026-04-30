@@ -1,5 +1,5 @@
-import { MouseState } from "./MouseControl.js";
-import { ActionTypes, globalCommandRegistry } from "./CommandRegistry.js";
+import { MouseState } from './MouseControl.js';
+import { ActionTypes, globalCommandRegistry } from '../core/CommandRegistry.js';
 
 export class CommandPanel {
     constructor(parentDiv, mouseControl) {

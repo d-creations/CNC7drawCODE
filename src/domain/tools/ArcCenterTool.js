@@ -1,7 +1,7 @@
 import { BaseTool } from "./BaseTool.js";
 import { Point } from "../shapes/Point.js";
 import { DrawArc } from "../shapes/DrawArc.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 /**
  * Tool for creating an Arc via Center, Start Point, and End Point.

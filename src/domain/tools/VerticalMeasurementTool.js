@@ -1,7 +1,7 @@
 import { BaseTool } from "./BaseTool.js";
 import { VerticalMeasurementShape } from "../shapes/VerticalMeasurementShape.js";
 import { Point } from "../shapes/Point.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 export class VerticalMeasurementTool extends BaseTool {
     constructor(drawBoard) {

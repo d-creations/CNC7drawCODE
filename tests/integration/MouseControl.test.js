@@ -1,9 +1,9 @@
 import test, { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DrawBoard } from "../../src/domain/DrawBoard.js";
-import { MouseControl, MouseState } from "../../src/domain/MouseControl.js";
-import { Camera, Vec4 } from "../../src/domain/Camera.js";
+import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
+import { MouseControl, MouseState } from '../../src/domain/viewController/MouseControl.js';
+import { Camera, Vec4 } from '../../src/domain/viewController/Camera.js';
 import { Point } from "../../src/domain/shapes/Point.js";
 import { DrawLine } from "../../src/domain/shapes/DrawLine.js";
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";

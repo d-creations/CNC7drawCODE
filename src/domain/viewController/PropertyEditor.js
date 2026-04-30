@@ -1,4 +1,4 @@
-import { AppConfig } from "./Config.js";
+import { AppConfig } from '../core/Config.js';
 
 /**
  * Handles the UI for editing properties of the currently selected drawing object.

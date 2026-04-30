@@ -2,7 +2,7 @@ import { BaseTool } from "./BaseTool.js";
 import { Geometry } from "../math/Geometry.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
 /**
  * Tool for creating a fully constrained Circle from 3 Lines (Tangents).

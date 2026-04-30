@@ -1,5 +1,5 @@
 import { BaseMeasurementShape } from "./BaseMeasurementShape.js";
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 import { Geometry } from "../math/Geometry.js";
 
 export class AngleMeasurementShape extends BaseMeasurementShape {

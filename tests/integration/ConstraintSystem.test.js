@@ -2,8 +2,8 @@ import test, { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";
-import { DrawBoard } from "../../src/domain/DrawBoard.js";
-import { Camera } from "../../src/domain/Camera.js";
+import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
+import { Camera } from '../../src/domain/viewController/Camera.js';
 
 // Basic global DOM environment shim
 global.window = {};

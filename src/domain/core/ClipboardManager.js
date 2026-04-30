@@ -1,8 +1,8 @@
-import { Vec4 } from "./Camera.js";
-import { Point } from "./shapes/Point.js";
-import { DrawLine } from "./shapes/DrawLine.js";
-import { DrawCircle } from "./shapes/DrawCircle.js";
-import { DrawArc } from "./shapes/DrawArc.js";
+import { Vec4 } from '../viewController/Camera.js';
+import { Point } from '../shapes/Point.js';
+import { DrawLine } from '../shapes/DrawLine.js';
+import { DrawCircle } from '../shapes/DrawCircle.js';
+import { DrawArc } from '../shapes/DrawArc.js';
 
 export class ClipboardManager {
     constructor(drawBoard) {

@@ -1,6 +1,6 @@
-import { Vec4 } from "../Camera.js";
+import { Vec4 } from '../viewController/Camera.js';
 
-import { stickFont } from "../LetterDrawer.js";
+import { stickFont } from '../core/LetterDrawer.js';
 
 export class CanvasRenderer {
     constructor(ctx, camera) {

@@ -125,6 +125,10 @@ export class ConstraintSystem {
                     isDependent = true;
                 } else if (otherGeo.type === "AngleMeasurement" && (otherGeo.data.l1Id === currentId || otherGeo.data.l2Id === currentId)) {
                     isDependent = true;
+                } else if ((otherGeo.type === "LengthMeasurement" || otherGeo.type === "VerticalMeasurement" || otherGeo.type === "HorizontalMeasurement") && (otherGeo.data.p1Id === currentId || otherGeo.data.p2Id === currentId)) {
+                    isDependent = true;
+                } else if (otherGeo.type === "RadiusMeasurement" && otherGeo.data.circleId === currentId) {
+                    isDependent = true;
                 }
 
                 if (isDependent) {

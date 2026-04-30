@@ -1,11 +1,11 @@
 import test, { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Camera, Vec4 } from "../../src/domain/Camera.js";
+import { Camera, Vec4 } from '../../src/domain/viewController/Camera.js';
 import { DrawLine } from "../../src/domain/shapes/DrawLine.js";
 import { Point } from "../../src/domain/shapes/Point.js";
 import { CanvasRenderer } from "../../src/domain/renderers/CanvasRenderer.js";
-import { AppConfig } from "../../src/domain/Config.js";
+import { AppConfig } from '../../src/domain/core/Config.js';
 
 // Global DOM shim
 global.window = {};

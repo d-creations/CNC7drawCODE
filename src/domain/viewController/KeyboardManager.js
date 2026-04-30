@@ -1,5 +1,5 @@
-import { ActionTypes, globalCommandRegistry } from "./CommandRegistry.js";
-import { MouseState } from "./MouseControl.js";
+import { ActionTypes, globalCommandRegistry } from '../core/CommandRegistry.js';
+import { MouseState } from './MouseControl.js';
 
 export class KeyboardManager {
     constructor(mouseControl, drawBoard) {

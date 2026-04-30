@@ -1,9 +1,9 @@
 import test, { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DrawBoard } from "../../src/domain/DrawBoard.js";
+import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
 import { LengthMeasurementTool } from "../../src/domain/tools/LengthMeasurementTool.js";
-import { Camera } from "../../src/domain/Camera.js";
+import { Camera } from '../../src/domain/viewController/Camera.js';
 
 // Global DOM shim
 global.window = {};

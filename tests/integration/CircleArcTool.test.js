@@ -1,11 +1,11 @@
 import test, { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DrawBoard } from "../../src/domain/DrawBoard.js";
+import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";
 import { Circle3PTool } from "../../src/domain/tools/Circle3PTool.js";
 import { ArcCenterTool } from "../../src/domain/tools/ArcCenterTool.js";
-import { Camera } from "../../src/domain/Camera.js";
+import { Camera } from '../../src/domain/viewController/Camera.js';
 
 // Global DOM shim
 global.window = {};
