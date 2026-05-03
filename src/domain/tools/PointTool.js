@@ -19,7 +19,8 @@ export class PointTool extends BaseTool {
         let ptId = this.constraintSystem.addGeometry({
             type: "Point",
             data: { x: worldVec.x, y: worldVec.y },
-            fixed: false
+            fixed: false,
+            isExplicit: true // Mark as explicitly created to prevent auto-deletion
         });
 
         // 2. Visual View Layer

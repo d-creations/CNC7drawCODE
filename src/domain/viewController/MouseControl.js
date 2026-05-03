@@ -10,15 +10,19 @@ import { HorizontalMeasurementTool } from '../tools/HorizontalMeasurementTool.js
 import { VerticalMeasurementTool } from '../tools/VerticalMeasurementTool.js';
 import { AngleMeasurementTool } from '../tools/AngleMeasurementTool.js';
 import { RadiusMeasurementTool } from '../tools/RadiusMeasurementTool.js';
+import { LineCircleMeasurementTool } from '../tools/LineCircleMeasurementTool.js';
 import { ArcCenterTool } from '../tools/ArcCenterTool.js';
 import { Arc3PTool } from '../tools/Arc3PTool.js';
+import { GeometricHorizontalTool } from '../tools/GeometricHorizontalTool.js';
+import { GeometricVerticalTool } from '../tools/GeometricVerticalTool.js';
+import { GeometricTangentTool } from '../tools/GeometricTangentTool.js';
 import { CircleTool } from '../tools/CircleTool.js';
 import { DrawLine } from '../shapes/DrawLine.js';
 import { DrawCircle } from '../shapes/DrawCircle.js';
 import { Point } from '../shapes/Point.js';
 import { Vec4 } from './Camera.js';
 
-export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17 };
+export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17, CONSTRAINT_HORIZONTAL: 18, CONSTRAINT_VERTICAL: 19, CONSTRAINT_TANGENT: 20, MEASURE_LINECIRCLE: 21 };
 
 export class MouseControl{
 
@@ -38,8 +42,12 @@ export class MouseControl{
     lengthMeasurementTool
     horizontalMeasurementTool
     verticalMeasurementTool
+    geometricHorizontalTool
+    geometricVerticalTool
+    geometricTangentTool
     angleMeasurementTool
     radiusMeasurementTool
+    lineCircleMeasurementTool
 
     constructor(parentDiv,drawBoard){
         this.buttonState = MouseState.SELECT
@@ -55,7 +63,11 @@ export class MouseControl{
         this.lengthMeasurementTool = new LengthMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.horizontalMeasurementTool = new HorizontalMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.verticalMeasurementTool = new VerticalMeasurementTool(drawBoard, drawBoard.constraintSystem);
+        this.geometricHorizontalTool = new GeometricHorizontalTool(drawBoard);
+        this.geometricVerticalTool = new GeometricVerticalTool(drawBoard);
+        this.geometricTangentTool = new GeometricTangentTool(drawBoard);
         this.angleMeasurementTool = new AngleMeasurementTool(drawBoard, drawBoard.constraintSystem);
+        this.lineCircleMeasurementTool = new LineCircleMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.radiusMeasurementTool = new RadiusMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.arcCenterTool = new ArcCenterTool(drawBoard, drawBoard.constraintSystem);
         this.arc3PTool = new Arc3PTool(drawBoard, drawBoard.constraintSystem);
@@ -238,11 +250,23 @@ export class MouseControl{
             if (this.buttonState === MouseState.MEASURE_VERTICAL) {
                 this.verticalMeasurementTool.onMouseMove(position.x, position.y);
             }
+            if (this.buttonState === MouseState.CONSTRAINT_HORIZONTAL) {
+                this.geometricHorizontalTool.onMouseMove(position.x, position.y);
+            }
+            if (this.buttonState === MouseState.CONSTRAINT_VERTICAL) {
+                this.geometricVerticalTool.onMouseMove(position.x, position.y);
+            }
+            if (this.buttonState === MouseState.CONSTRAINT_TANGENT) {
+                this.geometricTangentTool.onMouseMove(position.x, position.y);
+            }
             if (this.buttonState === MouseState.MEASURE_ANGLE) {
                 this.angleMeasurementTool.onMouseMove(position.x, position.y);
             }
             if (this.buttonState === MouseState.MEASURE_RADIUS) {
                 this.radiusMeasurementTool.onMouseMove(position.x, position.y);
+            }
+            if (this.buttonState === MouseState.MEASURE_LINECIRCLE) {
+                this.lineCircleMeasurementTool.onMouseMove(position.x, position.y);
             }
             if (this.buttonState === MouseState.ARC) {
                 this.arcCenterTool.onMouseMove(position);
@@ -308,12 +332,28 @@ export class MouseControl{
             this.verticalMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
         }
+        else if (this.buttonState == MouseState.CONSTRAINT_HORIZONTAL) {
+            this.geometricHorizontalTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+        else if (this.buttonState == MouseState.CONSTRAINT_VERTICAL) {
+            this.geometricVerticalTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+        else if (this.buttonState == MouseState.CONSTRAINT_TANGENT) {
+            this.geometricTangentTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
         else if (this.buttonState == MouseState.MEASURE_ANGLE) {
             this.angleMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
         }
         else if (this.buttonState == MouseState.MEASURE_RADIUS) {
             this.radiusMeasurementTool.onCanvasClick(position.x, position.y);
+            if (this.onStateChange) this.onStateChange();
+        }
+        else if (this.buttonState == MouseState.MEASURE_LINECIRCLE) {
+            this.lineCircleMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
         }
         else if (this.buttonState == MouseState.ARC) {

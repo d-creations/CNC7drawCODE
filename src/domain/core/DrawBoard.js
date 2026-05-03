@@ -305,6 +305,8 @@ export class DrawBoard{
     }
 
     deleteObject(objToRemove){
+        if (objToRemove && objToRemove.constraintId === "origin_point") return; // Origin Datum Point is immutable
+
         // 1. Remove from math JSON and get all recursively deleted dependent objects
         let removedConstraintIds = [];
         if (objToRemove.constraintId) {
@@ -335,7 +337,26 @@ export class DrawBoard{
         this.clearTempObjects()
         this.constraintSystem.load({ geometries: [], constraints: [] }); // wipe physics
         this.storage.clear();
+        this._ensureOriginPoint();
+        this.saveState();
         this.draw()
+    }
+
+    _ensureOriginPoint() {
+        const originId = "origin_point";
+        if (!this.constraintSystem.geometries.has(originId)) {
+            this.constraintSystem.addGeometry({
+                id: originId,
+                type: "Point",
+                data: { x: 0, y: 0 },
+                fixed: true,
+                isExplicit: true // user can snap to it
+            });
+            let pObj = new Point(new Vec4(0, 0, 0, 1));
+            pObj.constraintId = originId;
+            pObj.color = "red"; // Distinct color for Datum
+            this.drawObjects.push(pObj);
+        }
     }
 
     // =======================================================
@@ -442,6 +463,8 @@ export class DrawBoard{
                 }
             }
         }
+
+        this._ensureOriginPoint();
     }
 
     draw(){

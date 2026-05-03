@@ -2,6 +2,7 @@ import { BaseTool } from "./BaseTool.js";
 import { Geometry } from "../math/Geometry.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
+import { GeometricTangentShape } from "../shapes/GeometricTangentShape.js";
 import { Vec4 } from '../viewController/Camera.js';
 
 /**
@@ -69,17 +70,27 @@ export class Circle3TTool extends BaseTool {
         });
 
         // 3. Add Tangent Rules to tie it to the requested 3 Lines
-        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l1Id, circId] });
-        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l2Id, circId] });
-        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l3Id, circId] });
+        let link1Id = this.constraintSystem.addGeometry({ type: "GeometricTangent", data: { target1Id: l1Id, target2Id: circId }, fixed: false });
+        let link2Id = this.constraintSystem.addGeometry({ type: "GeometricTangent", data: { target1Id: l2Id, target2Id: circId }, fixed: false });
+        let link3Id = this.constraintSystem.addGeometry({ type: "GeometricTangent", data: { target1Id: l3Id, target2Id: circId }, fixed: false });
+        
+        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l1Id, circId], geometryId: link1Id });
+        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l2Id, circId], geometryId: link2Id });
+        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l3Id, circId], geometryId: link3Id });
 
-        // 4. Finally, tell the view to render it (Instantiate standard DrawCircle linked to the JSON center!)
+        // 4. Finally, tell the view to render it
         let pObj = new Point(new Vec4(startCirc.x, startCirc.y, 0, 1));
-        pObj.constraintId = centerId; // link them
+        pObj.constraintId = centerId;
         let cObj = new DrawCircle(pObj, startCirc.r);
-        cObj.constraintId = circId; // link them
+        cObj.constraintId = circId;
         this.drawBoard.drawObjects.push(pObj);
         this.drawBoard.drawObjects.push(cObj);
+
+        let t1 = new GeometricTangentShape(this.drawBoard, this.selectedVisualLines[0], cObj); t1.constraintId = link1Id;
+        let t2 = new GeometricTangentShape(this.drawBoard, this.selectedVisualLines[1], cObj); t2.constraintId = link2Id;
+        let t3 = new GeometricTangentShape(this.drawBoard, this.selectedVisualLines[2], cObj); t3.constraintId = link3Id;
+        this.drawBoard.drawObjects.push(t1, t2, t3);
+
         this.drawBoard.draw();
         console.log("3-Tangent Circle Created via Constraints!");
     }

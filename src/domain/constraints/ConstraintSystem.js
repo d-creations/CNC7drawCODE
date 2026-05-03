@@ -1,4 +1,5 @@
 import { GeometricConstraintSolver } from "./GCS.js";
+import { DependencyGraph } from "./DependencyGraph.js";
 
 /**
  * @typedef {Object} GeometryPrimitive
@@ -40,18 +41,25 @@ export class ConstraintSystem {
         /** @type {Map<string, string[]>} Adjacency Graph mapping GeometryID -> Connected ConstraintIDs */
         this.graph = new Map();
 
+        /** @type {DependencyGraph} Dependency DAG for lifecycles */
+        this.dag = new DependencyGraph();
+
         /** @type {GeometricConstraintSolver} Math Engine */
         this.gcs = new GeometricConstraintSolver();
     }
 
     /**
      * Rebuilds the fast-lookup graph used for identifying local "Islands"
+     * and the dependency DAG used for lifecycle operations.
      */
     buildGraph() {
         this.graph.clear();
+
         for (const [id, _] of this.geometries) {
             this.graph.set(id, []);
         }
+
+        // 1. Constraint adjacency graph
         for (const [cId, constraint] of this.constraints) {
             for (const targetId of constraint.targets) {
                 if (this.graph.has(targetId)) {
@@ -59,6 +67,9 @@ export class ConstraintSystem {
                 }
             }
         }
+
+        // 2. Lifecycle Dependency DAG
+        this.dag.build(this.geometries);
     }
 
     /**
@@ -93,6 +104,9 @@ export class ConstraintSystem {
         if (!geoConfig.id) {
             geoConfig.id = `${geoConfig.type.toLowerCase()}_${Date.now()}_${Math.floor(Math.random()*1000)}`;
         }
+        if (geoConfig.isExplicit === undefined) {
+            geoConfig.isExplicit = false; // default to implicit
+        }
         this.geometries.set(geoConfig.id, geoConfig);
         this.buildGraph(); // Update adjacency graph
         return geoConfig.id;
@@ -101,49 +115,21 @@ export class ConstraintSystem {
     /**
      * Safely removes a geometry and cascades the deletion to fundamental dependents (Lines, Circles) 
      * and connected constraints to prevent orphaned corrupted data.
+     * Also performs Garbage Collection on orphaned implicit geometries (like unreferenced endpoints).
      * @param {string} geoId
      * @returns {string[]} Array of all Geometry IDs that were implicitly deleted
      */
     removeGeometry(geoId) {
         if (!this.geometries.has(geoId)) return [];
 
-        let deletedGeoIds = new Set([geoId]);
-        let queue = [geoId];
+        let deletedGeoIds = this.dag.getDeletionList(geoId, this.geometries, this.graph, this.constraints);
 
-        // 1. Cascade delete dependent geometries (Lines/Circles that rely on this point)
-        while (queue.length > 0) {
-            let currentId = queue.shift();
-            for (let [otherId, otherGeo] of this.geometries) {
-                if (deletedGeoIds.has(otherId)) continue;
-                
-                let isDependent = false;
-                if (otherGeo.type === "Line" && (otherGeo.data.start === currentId || otherGeo.data.end === currentId)) {
-                    isDependent = true;
-                } else if (otherGeo.type === "Circle" && otherGeo.data.center === currentId) {
-                    isDependent = true;
-                } else if (otherGeo.type === "Arc" && otherGeo.data.center === currentId) {
-                    isDependent = true;
-                } else if (otherGeo.type === "AngleMeasurement" && (otherGeo.data.l1Id === currentId || otherGeo.data.l2Id === currentId)) {
-                    isDependent = true;
-                } else if ((otherGeo.type === "LengthMeasurement" || otherGeo.type === "VerticalMeasurement" || otherGeo.type === "HorizontalMeasurement") && (otherGeo.data.p1Id === currentId || otherGeo.data.p2Id === currentId)) {
-                    isDependent = true;
-                } else if (otherGeo.type === "RadiusMeasurement" && otherGeo.data.circleId === currentId) {
-                    isDependent = true;
-                }
-
-                if (isDependent) {
-                    deletedGeoIds.add(otherId);
-                    queue.push(otherId);
-                }
-            }
-        }
-
-        // 2. Remove all affected geometries
+        // Action 1: Remove all affected geometries
         for (let delId of deletedGeoIds) {
             this.geometries.delete(delId);
         }
 
-        // 3. Remove any constraints that referenced any of the deleted geometries
+        // Action 2: Remove any constraints that referenced any of the deleted geometries
         let constraintsToDelete = [];
         for (let [cId, constraint] of this.constraints) {
             if (constraint.targets.some(t => deletedGeoIds.has(t))) {
@@ -154,10 +140,9 @@ export class ConstraintSystem {
             this.constraints.delete(cId);
         }
 
-        // 4. Remove orphaned constraints (constraints whose targets are all missing)
+        // Action 3: Remove structurally orphaned constraints (targets entirely missing)
         let orphanedConstraints = [];
         for (let [cId, constraint] of this.constraints) {
-            // If all targets are missing from geometries, the constraint is orphaned
             if (constraint.targets.every(t => !this.geometries.has(t))) {
                 orphanedConstraints.push(cId);
             }
@@ -233,6 +218,27 @@ export class ConstraintSystem {
                         visitedGeoms.add(targetId);
                         travelDistances.set(targetId, currentDist + 1);
                         queue.push(targetId);
+                    }
+                }
+            }
+
+            // Also traverse structural dependencies (e.g. from Point to Line, or Line to Point)
+            let node = this.dag.nodes.get(currentGeo);
+            if (node) {
+                // If a point moves, the line moves
+                for (let dep of node.dependents) {
+                    if (!visitedGeoms.has(dep)) {
+                        visitedGeoms.add(dep);
+                        travelDistances.set(dep, currentDist + 1);
+                        queue.push(dep);
+                    }
+                }
+                // If a line is somehow targeted, its points must be included for math
+                for (let req of node.dependencies) {
+                    if (!visitedGeoms.has(req)) {
+                        visitedGeoms.add(req);
+                        travelDistances.set(req, currentDist + 1);
+                        queue.push(req);
                     }
                 }
             }

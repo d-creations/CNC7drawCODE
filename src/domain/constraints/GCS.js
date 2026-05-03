@@ -138,6 +138,21 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
                 let p2 = geometries.find(g => g.id === c.targets[1])?.data;
                 if(p1 && p2) return p1.y - p2.y;
             }
+            if (c.type === "Vertical") {
+                let p1 = geometries.find(g => g.id === c.targets[0])?.data;
+                let p2 = geometries.find(g => g.id === c.targets[1])?.data;
+                if(p1 && p2) return p1.x - p2.x;
+            }
+            if (c.type === "HorizontalMeasurement") {
+                let p1 = geometries.find(g => g.id === c.targets[0])?.data;
+                let p2 = geometries.find(g => g.id === c.targets[1])?.data;
+                if(p1 && p2 && c.value !== undefined) return Math.abs(p2.x - p1.x) - c.value;
+            }
+            if (c.type === "VerticalMeasurement") {
+                let p1 = geometries.find(g => g.id === c.targets[0])?.data;
+                let p2 = geometries.find(g => g.id === c.targets[1])?.data;
+                if(p1 && p2 && c.value !== undefined) return Math.abs(p2.y - p1.y) - c.value;
+            }
             if (c.type === "Distance" || c.type === "LengthMeasurement") {
                 // If it's the actual property LengthMeasurement from the app, it usually stores value in c.value or targets
                 let p1 = geometries.find(g => g.id === c.targets[0])?.data;
@@ -156,6 +171,78 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
                 if (circ && c.value !== undefined) {
                     console.log(`[EvalError] RadiusMeasurement: circ.r=${circ.r}, target value=${c.value}, error=${circ.r - c.value}`);
                     return circ.r - c.value;
+                }
+            }
+            if (c.type === "Radius") {
+                let circGeo = geometries.find(g => g.id === c.targets[0]);
+                if (circGeo && circGeo.type === "Circle" && c.value !== undefined) {
+                    return circGeo.data.r - c.value;
+                }
+            }
+            if (c.type === "Tangent") {
+                let geo1 = geometries.find(g => g.id === c.targets[0]);
+                let geo2 = geometries.find(g => g.id === c.targets[1]);
+                if (geo1 && geo2) {
+                    let lineGeo = geo1.type === "Line" ? geo1 : (geo2.type === "Line" ? geo2 : null);
+                    let circGeo = geo1.type === "Circle" ? geo1 : (geo2.type === "Circle" ? geo2 : null);
+
+                    if (lineGeo && circGeo) {
+                        let l_p1 = geometries.find(g => g.id === lineGeo.data.start)?.data;
+                        let l_p2 = geometries.find(g => g.id === lineGeo.data.end)?.data;
+                        let center = geometries.find(g => g.id === circGeo.data.center)?.data;
+                        
+                        if (l_p1 && l_p2 && center) {
+                            let x0 = center.x, y0 = center.y;
+                            let x1 = l_p1.x, y1 = l_p1.y;
+                            let x2 = l_p2.x, y2 = l_p2.y;
+                            
+                            let num = (x2 - x1)*(y1 - y0) - (x1 - x0)*(y2 - y1);
+                            let den = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                            if (den > 0) {
+                                let dist = Math.abs(num) / den;
+                                return dist - circGeo.data.r;
+                            }
+                        }
+                    }
+
+                    // Circle-to-Circle Tangent
+                    if (geo1.type === "Circle" && geo2.type === "Circle") {
+                        let c1 = geometries.find(g => g.id === geo1.data.center)?.data;
+                        let c2 = geometries.find(g => g.id === geo2.data.center)?.data;
+                        if (c1 && c2) {
+                            let dist = Math.sqrt(Math.pow(c2.x - c1.x, 2) + Math.pow(c2.y - c1.y, 2));
+                            return dist - (geo1.data.r + geo2.data.r);
+                        }
+                    }
+                }
+            }
+            if (c.type === "LineCircleMeasurement") {
+                let geo1 = geometries.find(g => g.id === c.targets[0]);
+                let geo2 = geometries.find(g => g.id === c.targets[1]);
+                if (geo1 && geo2 && c.value !== undefined) {
+                    let lineGeo = geo1.type === "Line" ? geo1 : (geo2.type === "Line" ? geo2 : null);
+                    let circGeo = geo1.type === "Circle" ? geo1 : (geo2.type === "Circle" ? geo2 : null);
+
+                    if (lineGeo && circGeo) {
+                        let l_p1 = geometries.find(g => g.id === lineGeo.data.start)?.data;
+                        let l_p2 = geometries.find(g => g.id === lineGeo.data.end)?.data;
+                        let center = geometries.find(g => g.id === circGeo.data.center)?.data;
+                        
+                        if (l_p1 && l_p2 && center) {
+                            let x0 = center.x, y0 = center.y;
+                            let x1 = l_p1.x, y1 = l_p1.y;
+                            let x2 = l_p2.x, y2 = l_p2.y;
+                            
+                            let num = (x2 - x1)*(y1 - y0) - (x1 - x0)*(y2 - y1);
+                            let den = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                            if (den > 0) {
+                                // Shortest distance from line to circle edge
+                                let centerDist = Math.abs(num) / den;
+                                let edgeDist = centerDist - circGeo.data.r;
+                                return edgeDist - c.value;
+                            }
+                        }
+                    }
                 }
             }
             if (c.type === "AngleMeasurement") {

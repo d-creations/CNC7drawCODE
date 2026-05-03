@@ -35,6 +35,9 @@ export class HorizontalMeasurementTool extends BaseTool {
         } else if (this.step === 1) {
             const p2 = pObj;
             
+            if (!this.currentMeasurement) {
+                this.currentMeasurement = new HorizontalMeasurementShape(this.drawBoard, this.p1, p2);
+            }
             this.currentMeasurement.p2 = p2;
             
             const val = Math.abs(p2.x - this.p1.x);

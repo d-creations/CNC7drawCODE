@@ -2,6 +2,7 @@ import { BaseTool } from "./BaseTool.js";
 import { Geometry } from "../math/Geometry.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
+import { GeometricTangentShape } from "../shapes/GeometricTangentShape.js";
 import { Vec4 } from '../viewController/Camera.js';
 
 /**
@@ -89,8 +90,11 @@ export class Circle2T1RTool extends BaseTool {
         });
 
         // 3. Add Rules: 2 Tangents + 1 Fixed Radius
-        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l1Id, circId] });
-        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l2Id, circId] });
+        let link1Id = this.constraintSystem.addGeometry({ type: "GeometricTangent", data: { target1Id: l1Id, target2Id: circId }, fixed: false });
+        let link2Id = this.constraintSystem.addGeometry({ type: "GeometricTangent", data: { target1Id: l2Id, target2Id: circId }, fixed: false });
+        
+        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l1Id, circId], geometryId: link1Id });
+        this.constraintSystem.addConstraint({ type: "Tangent", targets: [l2Id, circId], geometryId: link2Id });
         
         // This is a special constraint that forces the Circle's radius to remain exactly what we requested
         this.constraintSystem.addConstraint({ type: "Radius", targets: [circId], value: startCirc.r });
@@ -102,6 +106,11 @@ export class Circle2T1RTool extends BaseTool {
         cObj.constraintId = circId;
         this.drawBoard.drawObjects.push(pObj);
         this.drawBoard.drawObjects.push(cObj);
+
+        let t1 = new GeometricTangentShape(this.drawBoard, this.selectedVisualLines[0], cObj); t1.constraintId = link1Id;
+        let t2 = new GeometricTangentShape(this.drawBoard, this.selectedVisualLines[1], cObj); t2.constraintId = link2Id;
+        this.drawBoard.drawObjects.push(t1, t2);
+
         this.drawBoard.draw();
         console.log("2-Tangent 1-Radius Circle Created via Constraints!");
     }

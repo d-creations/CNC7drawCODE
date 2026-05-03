@@ -11,8 +11,12 @@ export const ActionTypes = {
     MEASURE_LENGTH: 'MEASURE_LENGTH',
     MEASURE_HORIZONTAL: 'MEASURE_HORIZONTAL',
     MEASURE_VERTICAL: 'MEASURE_VERTICAL',
+    CONSTRAINT_HORIZONTAL: 'CONSTRAINT_HORIZONTAL',
+    CONSTRAINT_VERTICAL: 'CONSTRAINT_VERTICAL',
+    CONSTRAINT_TANGENT: 'CONSTRAINT_TANGENT',
     MEASURE_ANGLE: 'MEASURE_ANGLE',
     MEASURE_RADIUS: 'MEASURE_RADIUS',
+    MEASURE_LINECIRCLE: 'MEASURE_LINECIRCLE',
     SELECT: 'SELECT',
     MOVE: 'MOVE',
     PASTE: 'PASTE',
@@ -55,8 +59,12 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.MEASURE_LENGTH, { id: ActionTypes.MEASURE_LENGTH, label: 'Measure Length', hotkey: 'M' });
         this.registerCommand(ActionTypes.MEASURE_HORIZONTAL, { id: ActionTypes.MEASURE_HORIZONTAL, label: 'Measure Horizontal', hotkey: 'H' });
         this.registerCommand(ActionTypes.MEASURE_VERTICAL, { id: ActionTypes.MEASURE_VERTICAL, label: 'Measure Vertical', hotkey: 'V' });
+        this.registerCommand(ActionTypes.CONSTRAINT_HORIZONTAL, { id: ActionTypes.CONSTRAINT_HORIZONTAL, label: 'Constraint Horizontal', hotkey: 'Shift+H' });
+        this.registerCommand(ActionTypes.CONSTRAINT_VERTICAL, { id: ActionTypes.CONSTRAINT_VERTICAL, label: 'Constraint Vertical', hotkey: 'Shift+V' });
+        this.registerCommand(ActionTypes.CONSTRAINT_TANGENT, { id: ActionTypes.CONSTRAINT_TANGENT, label: 'Constraint Tangent', hotkey: 'Shift+T' });
         this.registerCommand(ActionTypes.MEASURE_ANGLE, { id: ActionTypes.MEASURE_ANGLE, label: 'Measure Angle', hotkey: 'G' });
         this.registerCommand(ActionTypes.MEASURE_RADIUS, { id: ActionTypes.MEASURE_RADIUS, label: 'Measure Radius', hotkey: 'R' });
+        this.registerCommand(ActionTypes.MEASURE_LINECIRCLE, { id: ActionTypes.MEASURE_LINECIRCLE, label: 'Measure Line/Circle', hotkey: 'Shift+M' });
 
         this.registerCommand(ActionTypes.ESCAPE, { id: ActionTypes.ESCAPE, label: 'ESC', hotkey: 'Escape' });
         this.registerCommand(ActionTypes.SELECT, { id: ActionTypes.SELECT, label: 'Select', hotkey: 'S' });

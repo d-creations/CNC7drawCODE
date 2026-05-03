@@ -35,6 +35,9 @@ export class VerticalMeasurementTool extends BaseTool {
         } else if (this.step === 1) {
             const p2 = pObj;
             
+            if (!this.currentMeasurement) {
+                this.currentMeasurement = new VerticalMeasurementShape(this.drawBoard, this.p1, p2);
+            }
             this.currentMeasurement.p2 = p2;
             
             const val = Math.abs(p2.y - this.p1.y);

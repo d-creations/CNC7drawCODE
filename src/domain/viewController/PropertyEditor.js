@@ -60,6 +60,7 @@ export class PropertyEditor {
             // Close the property editor by deselecting the object
             this.setObject(null);
         }
+        this.btnOk = btnOk; // Expose reference for Enter key listener
 
         // Refresh Button simply forces a redraw and re-render if updated
         let btnRefresh = document.createElement('button');
@@ -163,7 +164,7 @@ export class PropertyEditor {
             if (e.key === "Enter") {
                 e.preventDefault(); // prevent triggering default submit / Move button
                 applyColor(e);
-                e.target.blur();
+                if (this.btnOk) this.btnOk.click(); // Close the editor automatically
             }
         });
 
@@ -198,6 +199,7 @@ export class PropertyEditor {
                  let geo = this.drawBoard.constraintSystem.geometries.get(pointObj.constraintId);
                  if (geo) {
                      geo.data.x = val;
+                     this.drawBoard.constraintSystem.solveLocal(pointObj.constraintId);
                      this.drawBoard.saveState();
                  }
              }
@@ -210,6 +212,7 @@ export class PropertyEditor {
                  let geo = this.drawBoard.constraintSystem.geometries.get(pointObj.constraintId);
                  if (geo) {
                      geo.data.y = val;
+                     this.drawBoard.constraintSystem.solveLocal(pointObj.constraintId);
                      this.drawBoard.saveState();
                  }
              }
@@ -252,7 +255,7 @@ export class PropertyEditor {
             if (e.key === "Enter") {
                 e.preventDefault(); // Stop bubbling which might click the first UI Button (Move)
                 applyValue(e);
-                e.target.blur();
+                if (this.btnOk) this.btnOk.click(); // Close the editor automatically
             }
         });
 

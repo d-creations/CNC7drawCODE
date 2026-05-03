@@ -84,13 +84,29 @@ export class HorizontalMeasurementShape extends BaseMeasurementShape {
                         geometryId: this.constraintId
                     });
                 }
+
+                // Trigger solver
+                editor.drawBoard.constraintSystem.solveLocal(this.p2.constraintId);
             }
+
+            editor.drawBoard.saveState();
             editor.drawBoard.draw();
+            editor.render();
         });
         
         // append inputs and container (was missing)
+        let alignBtn = document.createElement('button');
+        alignBtn.innerText = "Align Perfectly Vertical (Length = 0)";
+        alignBtn.style.marginTop = "5px";
+        alignBtn.style.width = "100%";
+        alignBtn.onclick = () => {
+             distanceInput.querySelector('input').value = 0;
+             distanceInput.querySelector('input').dispatchEvent(new Event('change'));
+        };
+
         divArea.appendChild(distanceInput);
         divArea.appendChild(offsetInput);
+        divArea.appendChild(alignBtn);
         editor.container.appendChild(divArea);
     }
 }

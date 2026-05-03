@@ -95,6 +95,22 @@ export class CommandPanel {
         buttonMeasureRadius.innerText = getLabel(ActionTypes.MEASURE_RADIUS);
         buttonMeasureRadius.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_RADIUS); });
 
+        let buttonMeasureLineCircle = document.createElement("Button");
+        buttonMeasureLineCircle.innerText = getLabel(ActionTypes.MEASURE_LINECIRCLE);
+        buttonMeasureLineCircle.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_LINECIRCLE); });
+
+        let buttonConstraintHorizontal = document.createElement("Button");
+        buttonConstraintHorizontal.innerText = getLabel(ActionTypes.CONSTRAINT_HORIZONTAL);
+        buttonConstraintHorizontal.addEventListener('click', () => { this.mouseControl.setState(MouseState.CONSTRAINT_HORIZONTAL); });
+
+        let buttonConstraintVertical = document.createElement("Button");
+        buttonConstraintVertical.innerText = getLabel(ActionTypes.CONSTRAINT_VERTICAL);
+        buttonConstraintVertical.addEventListener('click', () => { this.mouseControl.setState(MouseState.CONSTRAINT_VERTICAL); });
+
+        let buttonConstraintTangent = document.createElement("Button");
+        buttonConstraintTangent.innerText = getLabel(ActionTypes.CONSTRAINT_TANGENT);
+        buttonConstraintTangent.addEventListener('click', () => { this.mouseControl.setState(MouseState.CONSTRAINT_TANGENT); });
+
         let circleGroup = document.createElement("div");
         circleGroup.style.border = "1px solid #ccc";
         circleGroup.style.padding = "5px";
@@ -121,10 +137,24 @@ export class CommandPanel {
         measureGroup.style.fontSize = "12px";
 
         measureGroup.appendChild(buttonMeasureLength);
+        measureGroup.appendChild(buttonMeasureLineCircle);
         measureGroup.appendChild(buttonMeasureHorizontal);
         measureGroup.appendChild(buttonMeasureVertical);
         measureGroup.appendChild(buttonMeasureAngle);
         measureGroup.appendChild(buttonMeasureRadius);
+
+        let constraintGroup = document.createElement("div");
+        constraintGroup.style.border = "1px solid #ccc";
+        constraintGroup.style.padding = "5px";
+        constraintGroup.style.margin = "5px";
+        constraintGroup.style.display = "inline-flex";
+        constraintGroup.style.flexDirection = "column";
+        constraintGroup.innerText = "Constraints";
+        constraintGroup.style.fontSize = "12px";
+
+        constraintGroup.appendChild(buttonConstraintHorizontal);
+        constraintGroup.appendChild(buttonConstraintVertical);
+        constraintGroup.appendChild(buttonConstraintTangent);
 
         let buttonESC = document.createElement("Button");
         buttonESC.innerText = getLabel(ActionTypes.ESCAPE);
@@ -177,6 +207,7 @@ export class CommandPanel {
         menudiv.appendChild(buttonLine);
         menudiv.appendChild(circleGroup);
         menudiv.appendChild(measureGroup);
+        menudiv.appendChild(constraintGroup);
         menudiv.appendChild(buttonESC);
         menudiv.appendChild(buttonSelect);
 
@@ -259,6 +290,27 @@ export class CommandPanel {
             let step = this.mouseControl.angleMeasurementTool.step;
             if (step === 0) instruction.innerText = "Step 1/2: Select first line";
             else instruction.innerText = "Step 2/2: Select second line";
+        } else if (state === MouseState.MEASURE_LINECIRCLE) {
+            title.innerText = "Tool: Line-Circle Distance";
+            let step = this.mouseControl.lineCircleMeasurementTool.step;
+            if (step === 0) instruction.innerText = "Step 1/3: Select a Line or Circle structure";
+            else if (step === 1) instruction.innerText = "Step 2/3: Select the other structure type (Line or Circle)";
+            else if (step === 2) instruction.innerText = "Step 3/3: Move mouse to position offset and click to place";
+        } else if (state === MouseState.CONSTRAINT_HORIZONTAL) {
+            title.innerText = "Constraint: Horizontal Alignment";
+            let step = this.mouseControl.geometricHorizontalTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select first point";
+            else if (step === 1) instruction.innerText = "Step 2/2: Select second point";
+        } else if (state === MouseState.CONSTRAINT_VERTICAL) {
+            title.innerText = "Constraint: Vertical Alignment";
+            let step = this.mouseControl.geometricVerticalTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select first point";
+            else if (step === 1) instruction.innerText = "Step 2/2: Select second point";
+        } else if (state === MouseState.CONSTRAINT_TANGENT) {
+            title.innerText = "Constraint: Tangent";
+            let step = this.mouseControl.geometricTangentTool.step;
+            if (step === 0) instruction.innerText = "Step 1/2: Select a Line or Circle structure";
+            else if (step === 1) instruction.innerText = "Step 2/2: Select a touching Line or Circle structure";
         } else if (state === MouseState.MEASURE_RADIUS) {
             title.innerText = "Tool: Measure Radius";
             instruction.innerText = "Click on a circle to measure its radius";
