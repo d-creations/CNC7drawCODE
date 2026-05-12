@@ -13,6 +13,8 @@ import { RadiusMeasurementTool } from '../tools/RadiusMeasurementTool.js';
 import { LineCircleMeasurementTool } from '../tools/LineCircleMeasurementTool.js';
 import { ArcCenterTool } from '../tools/ArcCenterTool.js';
 import { Arc3PTool } from '../tools/Arc3PTool.js';
+import { CornerChamfer45Tool } from '../tools/CornerChamfer45Tool.js';
+import { FilletArcTool } from '../tools/FilletArcTool.js';
 import { GeometricHorizontalTool } from '../tools/GeometricHorizontalTool.js';
 import { GeometricVerticalTool } from '../tools/GeometricVerticalTool.js';
 import { GeometricTangentTool } from '../tools/GeometricTangentTool.js';
@@ -22,7 +24,7 @@ import { DrawCircle } from '../shapes/DrawCircle.js';
 import { Point } from '../shapes/Point.js';
 import { Vec4 } from './Camera.js';
 
-export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17, CONSTRAINT_HORIZONTAL: 18, CONSTRAINT_VERTICAL: 19, CONSTRAINT_TANGENT: 20, MEASURE_LINECIRCLE: 21 };
+export const MouseState = { NONE: - 1, POINT: 0, LINE: 1, SELECT: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4, MOVE: 5, CIRCLE: 6, CIRCLE_3P: 7, CIRCLE_2T1R: 8, CIRCLE_3T: 9, MEASURE_LENGTH: 10, MEASURE_ANGLE: 11, MEASURE_RADIUS: 12, PASTE: 13, ARC: 14, ARC_3P: 15, MEASURE_HORIZONTAL: 16, MEASURE_VERTICAL: 17, CONSTRAINT_HORIZONTAL: 18, CONSTRAINT_VERTICAL: 19, CONSTRAINT_TANGENT: 20, MEASURE_LINECIRCLE: 21, CHAMFER_45: 22, FILLET_ARC: 23 };
 
 export class MouseControl{
 
@@ -48,6 +50,8 @@ export class MouseControl{
     angleMeasurementTool
     radiusMeasurementTool
     lineCircleMeasurementTool
+    cornerChamfer45Tool
+    filletArcTool
 
     constructor(parentDiv,drawBoard){
         this.buttonState = MouseState.SELECT
@@ -71,11 +75,14 @@ export class MouseControl{
         this.radiusMeasurementTool = new RadiusMeasurementTool(drawBoard, drawBoard.constraintSystem);
         this.arcCenterTool = new ArcCenterTool(drawBoard, drawBoard.constraintSystem);
         this.arc3PTool = new Arc3PTool(drawBoard, drawBoard.constraintSystem);
+        this.cornerChamfer45Tool = new CornerChamfer45Tool(drawBoard, drawBoard.constraintSystem);
+        this.filletArcTool = new FilletArcTool(drawBoard, drawBoard.constraintSystem);
 
         this.mousePressed = false
         this.tempPoints = [];
         this.tempLines = [];
         this.commandRadius = 20; // Default radius input
+        this.commandChamferSize = 10;
         this.onStateChange = null; 
     }
 
@@ -83,6 +90,12 @@ export class MouseControl{
         this.buttonState = newState;
         this.tempPoints = [];
         this.tempLines = [];
+        if (this.cornerChamfer45Tool && this.buttonState !== MouseState.CHAMFER_45) {
+            this.cornerChamfer45Tool.cancel();
+        }
+        if (this.filletArcTool && this.buttonState !== MouseState.FILLET_ARC) {
+            this.filletArcTool.cancel();
+        }
 
     // Clear any selection when switching tools so PropertyEditor hides and items deselect
     if (this.drawBoard) {
@@ -275,7 +288,7 @@ export class MouseControl{
                 this.arc3PTool.onMouseMove(position);
             }
             // Give hover hint when not holding mouse down for drawing tools
-            if ([MouseState.SELECT, MouseState.LINE, MouseState.CIRCLE, MouseState.CIRCLE_3P, MouseState.POINT, MouseState.CIRCLE_3T, MouseState.CIRCLE_2T1R, MouseState.MEASURE_ANGLE, MouseState.MEASURE_LENGTH, MouseState.MEASURE_HORIZONTAL, MouseState.MEASURE_VERTICAL, MouseState.MEASURE_RADIUS, MouseState.ARC, MouseState.ARC_3P].includes(this.buttonState)) {
+            if ([MouseState.SELECT, MouseState.LINE, MouseState.CIRCLE, MouseState.CIRCLE_3P, MouseState.POINT, MouseState.CIRCLE_3T, MouseState.CIRCLE_2T1R, MouseState.MEASURE_ANGLE, MouseState.MEASURE_LENGTH, MouseState.MEASURE_HORIZONTAL, MouseState.MEASURE_VERTICAL, MouseState.MEASURE_RADIUS, MouseState.ARC, MouseState.ARC_3P, MouseState.CHAMFER_45, MouseState.FILLET_ARC].includes(this.buttonState)) {
                 this.drawBoard.hoverObject(position.x, position.y);
             }
             // Draw anyway so the mouse tracker cursor coordinates update
@@ -310,6 +323,26 @@ export class MouseControl{
             } else if (this.circle2T1RTool.step === "placeRadiusHint") {
                 this.circle2T1RTool.tempRadius = this.commandRadius; // Inject manual radius
                 this.circle2T1RTool.onCanvasClick(position.x, position.y);
+                if (this.onStateChange) this.onStateChange();
+            }
+        }
+        else if (this.buttonState == MouseState.CHAMFER_45) {
+            let snappedPt = this.drawBoard.selectStartObject(position.x, position.y, ["DrawLine"]);
+            if (snappedPt.exist && snappedPt.obj) {
+                this.cornerChamfer45Tool.onShapeSelected(snappedPt.obj, this.commandChamferSize);
+                if (this.onStateChange) this.onStateChange();
+            }
+        }
+        else if (this.buttonState == MouseState.FILLET_ARC) {
+            if (this.filletArcTool.step === "selectLines") {
+                let snappedPt = this.drawBoard.selectStartObject(position.x, position.y, ["DrawLine"]);
+                if (snappedPt.exist && snappedPt.obj) {
+                    this.filletArcTool.onShapeSelected(snappedPt.obj);
+                    if (this.onStateChange) this.onStateChange();
+                }
+            } else if (this.filletArcTool.step === "placeRadiusHint") {
+                this.filletArcTool.tempRadius = this.commandRadius;
+                this.filletArcTool.onCanvasClick(position.x, position.y);
                 if (this.onStateChange) this.onStateChange();
             }
         }

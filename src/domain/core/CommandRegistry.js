@@ -8,6 +8,8 @@ export const ActionTypes = {
     CIRCLE_3T: 'CIRCLE_3T',
     ARC: 'ARC',
     ARC_3P: 'ARC_3P',
+    CHAMFER_45: 'CHAMFER_45',
+    FILLET_ARC: 'FILLET_ARC',
     MEASURE_LENGTH: 'MEASURE_LENGTH',
     MEASURE_HORIZONTAL: 'MEASURE_HORIZONTAL',
     MEASURE_VERTICAL: 'MEASURE_VERTICAL',
@@ -56,6 +58,8 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.CIRCLE_3T, { id: ActionTypes.CIRCLE_3T, label: 'Circle (3T)', hotkey: 'T' });
         this.registerCommand(ActionTypes.ARC, { id: ActionTypes.ARC, label: 'Arc (C+S+E)', hotkey: 'A' });
         this.registerCommand(ActionTypes.ARC_3P, { id: ActionTypes.ARC_3P, label: 'Arc (3P)', hotkey: 'Shift+A' });
+        this.registerCommand(ActionTypes.CHAMFER_45, { id: ActionTypes.CHAMFER_45, label: 'Chamfer 45', hotkey: 'F' });
+        this.registerCommand(ActionTypes.FILLET_ARC, { id: ActionTypes.FILLET_ARC, label: 'Fillet Radius', hotkey: 'Shift+F' });
         
         this.registerCommand(ActionTypes.MEASURE_LENGTH, { id: ActionTypes.MEASURE_LENGTH, label: 'Measure Length', hotkey: 'M' });
         this.registerCommand(ActionTypes.MEASURE_HORIZONTAL, { id: ActionTypes.MEASURE_HORIZONTAL, label: 'Measure Horizontal', hotkey: 'H' });

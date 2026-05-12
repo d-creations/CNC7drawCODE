@@ -8,16 +8,16 @@ export class RadiusMeasurementTool extends BaseTool {
     }
 
     onCanvasClick(x, y) {
-        // Try to pick a circle
-        const hit = this.drawBoard.selectStartObject(x, y, ["DrawCircle", "DrawCircle3P", "DrawCircle2T1R", "DrawCircle3T"]);
+        // Try to pick a circular shape
+        const hit = this.drawBoard.selectStartObject(x, y, ["DrawCircle", "DrawCircle3P", "DrawCircle2T1R", "DrawCircle3T", "DrawArc"]);
         
         if (hit.exist && hit.obj) {
-            const circle = hit.obj;
+            const circularShape = hit.obj;
 
-            // Check if there is already a radius measurement constraint for this circle
+            // Check if there is already a radius measurement constraint for this shape
             let constraintExists = false;
             for (let [cId, cDef] of this.drawBoard.constraintSystem.constraints) {
-                if (cDef.type === "RadiusMeasurement" && cDef.targets.includes(circle.constraintId)) {
+                if (cDef.type === "RadiusMeasurement" && cDef.targets.includes(circularShape.constraintId)) {
                     constraintExists = true;
                     break;
                 }
@@ -30,8 +30,8 @@ export class RadiusMeasurementTool extends BaseTool {
             let measurementId = this.drawBoard.constraintSystem.addGeometry({
                 type: "RadiusMeasurement",
                 data: {
-                    circleId: circle.constraintId,
-                    value: circle.radius,
+                    circleId: circularShape.constraintId,
+                    value: circularShape.radius,
                     angle: Math.PI / 4
                 },
                 fixed: false
@@ -40,12 +40,12 @@ export class RadiusMeasurementTool extends BaseTool {
             // Add proper mathematical constraint
             this.drawBoard.constraintSystem.addConstraint({
                 type: "RadiusMeasurement",
-                targets: [circle.constraintId],
-                value: circle.radius,
+                targets: [circularShape.constraintId],
+                value: circularShape.radius,
                 geometryId: measurementId 
             });
 
-            const measurement = new RadiusMeasurementShape(this.drawBoard, circle);
+            const measurement = new RadiusMeasurementShape(this.drawBoard, circularShape);
             measurement.constraintId = measurementId;
             this.drawBoard.drawObjects.push(measurement);
             

@@ -79,6 +79,12 @@ export class KeyboardManager {
             case ActionTypes.ARC_3P:
                 this.mouseControl.setState(MouseState.ARC_3P);
                 break;
+            case ActionTypes.CHAMFER_45:
+                this.mouseControl.setState(MouseState.CHAMFER_45);
+                break;
+            case ActionTypes.FILLET_ARC:
+                this.mouseControl.setState(MouseState.FILLET_ARC);
+                break;
             case ActionTypes.MEASURE_LENGTH:
                 this.mouseControl.setState(MouseState.MEASURE_LENGTH);
                 break;

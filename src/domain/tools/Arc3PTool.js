@@ -16,17 +16,35 @@ export class Arc3PTool extends BaseTool {
         this.step = "placeStart"; 
         this.pStart = null;
         this.pEnd = null;
+        this.pStartObj = null;
+        this.pEndObj = null;
     }
 
     onCanvasClick(x, y) {
         let worldVec = this.drawBoard.camera.getWorldVec(x, y);
 
         if (this.step === "placeStart") {
-            this.pStart = { x: worldVec.x, y: worldVec.y };
+            const startId = this.constraintSystem.addGeometry({
+                type: "Point",
+                data: { x: worldVec.x, y: worldVec.y },
+                fixed: false
+            });
+            this.pStart = { id: startId, x: worldVec.x, y: worldVec.y };
+            this.pStartObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
+            this.pStartObj.constraintId = startId;
+            this.drawBoard.drawObjects.push(this.pStartObj);
             this.step = "placeEnd";
 
         } else if (this.step === "placeEnd") {
-            this.pEnd = { x: worldVec.x, y: worldVec.y };
+            const endId = this.constraintSystem.addGeometry({
+                type: "Point",
+                data: { x: worldVec.x, y: worldVec.y },
+                fixed: false
+            });
+            this.pEnd = { id: endId, x: worldVec.x, y: worldVec.y };
+            this.pEndObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
+            this.pEndObj.constraintId = endId;
+            this.drawBoard.drawObjects.push(this.pEndObj);
             this.step = "placeRadius";
 
         } else if (this.step === "placeRadius") {
@@ -43,7 +61,7 @@ export class Arc3PTool extends BaseTool {
 
                 let arcId = this.constraintSystem.addGeometry({
                     type: "Arc",
-                    data: { center: centerId, r: arcData.r, startAngle: arcData.startAngle, endAngle: arcData.endAngle },
+                    data: { center: centerId, start: this.pStart.id, end: this.pEnd.id, r: arcData.r, startAngle: arcData.startAngle, endAngle: arcData.endAngle },
                     fixed: false
                 });
 
@@ -51,7 +69,7 @@ export class Arc3PTool extends BaseTool {
                 centerPointObj.constraintId = centerId;
                 this.drawBoard.drawObjects.push(centerPointObj);
 
-                let arcObj = new DrawArc(centerPointObj, arcData.r, arcData.startAngle, arcData.endAngle);
+                let arcObj = new DrawArc(centerPointObj, arcData.r, arcData.startAngle, arcData.endAngle, this.pStartObj, this.pEndObj);
                 arcObj.constraintId = arcId;
                 this.drawBoard.drawObjects.push(arcObj);
             }
@@ -132,6 +150,8 @@ export class Arc3PTool extends BaseTool {
         this.step = "placeStart";
         this.pStart = null;
         this.pEnd = null;
+        this.pStartObj = null;
+        this.pEndObj = null;
         this.drawBoard.clearTempObjects();
         this.drawBoard.draw();
     }

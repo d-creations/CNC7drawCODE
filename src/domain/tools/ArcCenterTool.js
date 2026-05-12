@@ -16,6 +16,7 @@ export class ArcCenterTool extends BaseTool {
         this.step = "placeCenter"; 
         this.pCenter = null;
         this.pStart = null;
+        this.pStartObj = null;
         this.tempArc = null;
         this.tempPointS = null;
         this.tempPointE = null;
@@ -48,6 +49,7 @@ export class ArcCenterTool extends BaseTool {
 
             let startPointObj = new Point(new Vec4(worldVec.x, worldVec.y, 0, 1));
             startPointObj.constraintId = startId;
+            this.pStartObj = startPointObj;
             this.drawBoard.drawObjects.push(startPointObj);
 
             this.step = "placeEnd";
@@ -55,6 +57,15 @@ export class ArcCenterTool extends BaseTool {
         } else if (this.step === "placeEnd") {
             let endX = worldVec.x;
             let endY = worldVec.y;
+
+            let endId = this.constraintSystem.addGeometry({
+                type: "Point",
+                data: { x: endX, y: endY },
+                fixed: false
+            });
+            let endPointObj = new Point(new Vec4(endX, endY, 0, 1));
+            endPointObj.constraintId = endId;
+            this.drawBoard.drawObjects.push(endPointObj);
 
             // Calculate radius and angles
             let dxStart = this.pStart.x - this.pCenter.x;
@@ -70,7 +81,7 @@ export class ArcCenterTool extends BaseTool {
             // Build constraint primitive for Arc
             let arcId = this.constraintSystem.addGeometry({
                 type: "Arc",
-                data: { center: this.pCenter.id, r: radius, startAngle: startAngle, endAngle: endAngle },
+                data: { center: this.pCenter.id, start: this.pStart.id, end: endId, r: radius, startAngle: startAngle, endAngle: endAngle },
                 fixed: false
             });
 
@@ -87,7 +98,7 @@ export class ArcCenterTool extends BaseTool {
             // We just let the Arc hold its fixed values for now.
 
             let centerPointObj = this.drawBoard.drawObjects.find(o => o.constraintId === this.pCenter.id);
-            let arcObj = new DrawArc(centerPointObj, radius, startAngle, endAngle);
+            let arcObj = new DrawArc(centerPointObj, radius, startAngle, endAngle, this.pStartObj, endPointObj);
             arcObj.constraintId = arcId;
 
             this.drawBoard.drawObjects.push(arcObj);
@@ -137,6 +148,7 @@ export class ArcCenterTool extends BaseTool {
         this.step = "placeCenter";
         this.pCenter = null;
         this.pStart = null;
+        this.pStartObj = null;
         this.drawBoard.clearTempObjects();
         this.drawBoard.draw();
     }

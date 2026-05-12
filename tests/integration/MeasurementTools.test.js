@@ -3,8 +3,13 @@ import assert from 'node:assert/strict';
 
 import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
 import { LengthMeasurementTool } from "../../src/domain/tools/LengthMeasurementTool.js";
+import { HorizontalMeasurementTool } from '../../src/domain/tools/HorizontalMeasurementTool.js';
+import { VerticalMeasurementTool } from '../../src/domain/tools/VerticalMeasurementTool.js';
 import { AngleMeasurementTool } from '../../src/domain/tools/AngleMeasurementTool.js';
+import { GeometricHorizontalTool } from '../../src/domain/tools/GeometricHorizontalTool.js';
+import { GeometricVerticalTool } from '../../src/domain/tools/GeometricVerticalTool.js';
 import { AngleMeasurementShape } from '../../src/domain/shapes/AngleMeasurementShape.js';
+import { DrawArc } from '../../src/domain/shapes/DrawArc.js';
 import { DrawLine } from '../../src/domain/shapes/DrawLine.js';
 import { Point } from '../../src/domain/shapes/Point.js';
 import { Camera } from '../../src/domain/viewController/Camera.js';
@@ -20,7 +25,11 @@ describe("Phase 6: Measurement Tools Integration", () => {
     let constraintSystem;
     let mockCtx;
     let lengthTool;
+    let horizontalTool;
+    let verticalTool;
     let angleTool;
+    let geometricHorizontalTool;
+    let geometricVerticalTool;
 
     beforeEach(() => {
         mockCtx = {
@@ -48,7 +57,11 @@ describe("Phase 6: Measurement Tools Integration", () => {
         constraintSystem = drawBoard.constraintSystem;
 
         lengthTool = new LengthMeasurementTool(drawBoard);
+        horizontalTool = new HorizontalMeasurementTool(drawBoard);
+        verticalTool = new VerticalMeasurementTool(drawBoard);
         angleTool = new AngleMeasurementTool(drawBoard);
+        geometricHorizontalTool = new GeometricHorizontalTool(drawBoard);
+        geometricVerticalTool = new GeometricVerticalTool(drawBoard);
     });
 
     function createPoint(x, y) {
@@ -75,15 +88,37 @@ describe("Phase 6: Measurement Tools Integration", () => {
         return line;
     }
 
+    function createArc(centerPoint, startPoint, endPoint, radius, startAngle, endAngle) {
+        const arcId = constraintSystem.addGeometry({
+            type: 'Arc',
+            data: {
+                center: centerPoint.constraintId,
+                start: startPoint.constraintId,
+                end: endPoint.constraintId,
+                r: radius,
+                startAngle,
+                endAngle
+            },
+            fixed: false
+        });
+        const arc = new DrawArc(centerPoint, radius, startAngle, endAngle, startPoint, endPoint);
+        arc.constraintId = arcId;
+        drawBoard.drawObjects.push(arc);
+        return arc;
+    }
+
     it("should generate a Length Measurement shape and constraint between two points", () => {
-        // Step 1: Click at (0, 0)
-        lengthTool.onCanvasClick(0, 0);
+        const p1 = createPoint(20, 10);
+        const p2 = createPoint(50, 50);
+
+        // Step 1: Click existing point
+        lengthTool.onCanvasClick(20, 10);
         
         // Simulate Mouse move to initialize the temporary drawing shape
-        lengthTool.onMouseMove(30, 40);
+        lengthTool.onMouseMove(50, 50);
 
-        // Step 2: Click at (30, 40)
-        lengthTool.onCanvasClick(30, 40);
+        // Step 2: Click existing point
+        lengthTool.onCanvasClick(50, 50);
         
         // A length measurement creates a constraint in the system and a visual shape.
         let createdConstraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === "LengthMeasurement");
@@ -97,6 +132,156 @@ describe("Phase 6: Measurement Tools Integration", () => {
         // Check visual array
         let lengthShapes = drawBoard.drawObjects.filter(o => o.constructor.name === "LengthMeasurementShape");
         assert.equal(lengthShapes.length, 1, "DrawBoard should contain the Length Measurement shape");
+        assert.equal(createdConstraints[0].targets[0], p1.constraintId, 'The measurement should start at the selected point');
+        assert.equal(createdConstraints[0].targets[1], p2.constraintId, 'The measurement should end at the selected point');
+    });
+
+    it("should ignore empty canvas clicks for measurement tools", () => {
+        const initialPointCount = Array.from(constraintSystem.geometries.values()).filter(g => g.type === 'Point').length;
+        const initialMeasurementCount = Array.from(constraintSystem.constraints.values()).filter(c => ["LengthMeasurement", "HorizontalMeasurement", "VerticalMeasurement"].includes(c.type)).length;
+
+        lengthTool.onCanvasClick(200, 200);
+        horizontalTool.onCanvasClick(220, 220);
+        verticalTool.onCanvasClick(240, 240);
+
+        const pointCount = Array.from(constraintSystem.geometries.values()).filter(g => g.type === 'Point').length;
+        const measurementCount = Array.from(constraintSystem.constraints.values()).filter(c => ["LengthMeasurement", "HorizontalMeasurement", "VerticalMeasurement"].includes(c.type)).length;
+
+        assert.equal(pointCount, initialPointCount, 'Empty clicks should not create any points');
+        assert.equal(measurementCount, initialMeasurementCount, 'Empty clicks should not create any measurements');
+    });
+
+    it("should create a Length Measurement from a single line click", () => {
+        const p1 = createPoint(0, 0);
+        const p2 = createPoint(100, 0);
+        createLine(p1, p2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        lengthTool.onCanvasClick(50, 0);
+
+        const lengthConstraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'LengthMeasurement');
+        const lengthShapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'LengthMeasurementShape');
+
+        assert.equal(lengthConstraints.length, 1, 'Exactly one LengthMeasurement constraint should be created');
+        assert.equal(lengthShapes.length, 1, 'DrawBoard should contain one Length Measurement shape');
+        assert.equal(lengthConstraints[0].targets[0], p1.constraintId, 'The measurement should start at the line start point');
+        assert.equal(lengthConstraints[0].targets[1], p2.constraintId, 'The measurement should end at the line end point');
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Shape-click length creation should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Shape-click length creation should redraw immediately');
+    });
+
+    it("should create a Length Measurement from a single arc click", () => {
+        const center = createPoint(0, 0);
+        const start = createPoint(50, 0);
+        const end = createPoint(0, 50);
+        createArc(center, start, end, 50, 0, Math.PI / 2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        lengthTool.onCanvasClick(35, 35);
+
+        const lengthConstraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'LengthMeasurement');
+        const lengthShapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'LengthMeasurementShape');
+
+        assert.equal(lengthConstraints.length, 1, 'Exactly one LengthMeasurement constraint should be created');
+        assert.equal(lengthShapes.length, 1, 'DrawBoard should contain one Length Measurement shape');
+        assert.equal(lengthConstraints[0].targets[0], start.constraintId, 'The measurement should start at the arc start point');
+        assert.equal(lengthConstraints[0].targets[1], end.constraintId, 'The measurement should end at the arc end point');
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Arc-click length creation should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Arc-click length creation should redraw immediately');
+    });
+
+    it("should create a Horizontal Measurement from a single line click", () => {
+        const p1 = createPoint(0, 0);
+        const p2 = createPoint(100, 40);
+        createLine(p1, p2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        horizontalTool.onCanvasClick(50, 20);
+
+        const constraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'HorizontalMeasurement');
+        const shapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'HorizontalMeasurementShape');
+
+        assert.equal(constraints.length, 1, 'Exactly one HorizontalMeasurement constraint should be created');
+        assert.equal(shapes.length, 1, 'DrawBoard should contain one Horizontal Measurement shape');
+        assert.equal(constraints[0].targets[0], p1.constraintId, 'The measurement should start at the line start point');
+        assert.equal(constraints[0].targets[1], p2.constraintId, 'The measurement should end at the line end point');
+        assert.equal(constraints[0].value, 100, 'The horizontal measurement should use the endpoint X distance');
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Shape-click horizontal measurement should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Shape-click horizontal measurement should redraw immediately');
+    });
+
+    it("should create a Vertical Measurement from a single arc click", () => {
+        const center = createPoint(0, 0);
+        const start = createPoint(50, 0);
+        const end = createPoint(0, 50);
+        createArc(center, start, end, 50, 0, Math.PI / 2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        verticalTool.onCanvasClick(35, 35);
+
+        const constraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'VerticalMeasurement');
+        const shapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'VerticalMeasurementShape');
+
+        assert.equal(constraints.length, 1, 'Exactly one VerticalMeasurement constraint should be created');
+        assert.equal(shapes.length, 1, 'DrawBoard should contain one Vertical Measurement shape');
+        assert.equal(constraints[0].targets[0], start.constraintId, 'The measurement should start at the arc start point');
+        assert.equal(constraints[0].targets[1], end.constraintId, 'The measurement should end at the arc end point');
+        assert.equal(constraints[0].value, 50, 'The vertical measurement should use the endpoint Y distance');
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Shape-click vertical measurement should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Shape-click vertical measurement should redraw immediately');
+    });
+
+    it("should create a Horizontal constraint from a single line click", () => {
+        const p1 = createPoint(0, 0);
+        const p2 = createPoint(100, 40);
+        createLine(p1, p2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        geometricHorizontalTool.onCanvasClick(50, 20);
+
+        const constraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'Horizontal');
+        const shapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'GeometricHorizontalShape');
+        const p1Data = constraintSystem.geometries.get(p1.constraintId).data;
+        const p2Data = constraintSystem.geometries.get(p2.constraintId).data;
+
+        assert.equal(constraints.length, 1, 'Exactly one Horizontal constraint should be created');
+        assert.equal(shapes.length, 1, 'DrawBoard should contain one geometric horizontal shape');
+        assert.ok(Math.abs(p1Data.y - p2Data.y) < 0.001, `The selected endpoints should be solved horizontally, got y=${p1Data.y} and y=${p2Data.y}`);
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Shape-click horizontal constraint should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Shape-click horizontal constraint should redraw immediately');
+    });
+
+    it("should create a Vertical constraint from a single arc click", () => {
+        const center = createPoint(0, 0);
+        const start = createPoint(50, 0);
+        const end = createPoint(0, 50);
+        createArc(center, start, end, 50, 0, Math.PI / 2);
+
+        drawBoard.saveState = mock.fn();
+        drawBoard.draw = mock.fn();
+
+        geometricVerticalTool.onCanvasClick(35, 35);
+
+        const constraints = Array.from(constraintSystem.constraints.values()).filter(c => c.type === 'Vertical');
+        const shapes = drawBoard.drawObjects.filter(o => o.constructor.name === 'GeometricVerticalShape');
+        const startData = constraintSystem.geometries.get(start.constraintId).data;
+        const endData = constraintSystem.geometries.get(end.constraintId).data;
+
+        assert.equal(constraints.length, 1, 'Exactly one Vertical constraint should be created');
+        assert.equal(shapes.length, 1, 'DrawBoard should contain one geometric vertical shape');
+        assert.ok(Math.abs(startData.x - endData.x) < 0.001, `The selected endpoints should be solved vertically, got x=${startData.x} and x=${endData.x}`);
+        assert.equal(drawBoard.saveState.mock.callCount(), 1, 'Shape-click vertical constraint should save immediately');
+        assert.equal(drawBoard.draw.mock.callCount(), 1, 'Shape-click vertical constraint should redraw immediately');
     });
 
     it("should finalize an Angle Measurement immediately after the second click", () => {

@@ -414,7 +414,9 @@ export class DrawBoard{
             } else if (geo.type === "Arc") {
                 let centerPoint = uiMap.get(geo.data.center);
                 if (centerPoint) {
-                    let aObj = new DrawArc(centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle);
+                    let startPoint = uiMap.get(geo.data.start) || null;
+                    let endPoint = uiMap.get(geo.data.end) || null;
+                    let aObj = new DrawArc(centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle, startPoint, endPoint);
                     aObj.constraintId = geo.id;
                     this.drawObjects.push(aObj);
                 }
@@ -501,9 +503,26 @@ export class DrawBoard{
                                 obj.centerPoint.vec4.x = centerData.x;
                                 obj.centerPoint.vec4.y = centerData.y;
                             }
+                            let startData = this.constraintSystem.geometries.get(geoData.start)?.data;
+                            let endData = this.constraintSystem.geometries.get(geoData.end)?.data;
+                            if (startData && obj.startPoint && obj.startPoint.vec4) {
+                                obj.startPoint.vec4.x = startData.x;
+                                obj.startPoint.vec4.y = startData.y;
+                            }
+                            if (endData && obj.endpoint && obj.endpoint.vec4) {
+                                obj.endpoint.vec4.x = endData.x;
+                                obj.endpoint.vec4.y = endData.y;
+                            }
                             obj.radius = geoData.r;
-                            obj.startAngle = geoData.startAngle;
-                            obj.endAngle = geoData.endAngle;
+                            if (startData && endData && centerData) {
+                                obj.startAngle = Math.atan2(startData.y - centerData.y, startData.x - centerData.x);
+                                obj.endAngle = Math.atan2(endData.y - centerData.y, endData.x - centerData.x);
+                                geoData.startAngle = obj.startAngle;
+                                geoData.endAngle = obj.endAngle;
+                            } else {
+                                obj.startAngle = geoData.startAngle;
+                                obj.endAngle = geoData.endAngle;
+                            }
                         }
                         else if (obj.constructor.name === "DrawLine") {
                             let startData = this.constraintSystem.geometries.get(geoData.start)?.data;

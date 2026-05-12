@@ -75,6 +75,14 @@ export class CommandPanel {
         buttonArc3P.innerText = getLabel(ActionTypes.ARC_3P);
         buttonArc3P.addEventListener('click', () => { this.mouseControl.setState(MouseState.ARC_3P); });
 
+        let buttonChamfer45 = document.createElement("Button");
+        buttonChamfer45.innerText = getLabel(ActionTypes.CHAMFER_45);
+        buttonChamfer45.addEventListener('click', () => { this.mouseControl.setState(MouseState.CHAMFER_45); });
+
+        let buttonFilletArc = document.createElement("Button");
+        buttonFilletArc.innerText = getLabel(ActionTypes.FILLET_ARC);
+        buttonFilletArc.addEventListener('click', () => { this.mouseControl.setState(MouseState.FILLET_ARC); });
+
         let buttonMeasureLength = document.createElement("Button");
         buttonMeasureLength.innerText = getLabel(ActionTypes.MEASURE_LENGTH);
         buttonMeasureLength.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_LENGTH); });
@@ -126,6 +134,8 @@ export class CommandPanel {
         circleGroup.appendChild(buttonCircle3T);
         circleGroup.appendChild(buttonArc);
         circleGroup.appendChild(buttonArc3P);
+        circleGroup.appendChild(buttonChamfer45);
+        circleGroup.appendChild(buttonFilletArc);
 
         let measureGroup = document.createElement("div");
         measureGroup.style.border = "1px solid #ccc";
@@ -272,6 +282,74 @@ export class CommandPanel {
             if (step === "placeStart") instruction.innerText = "Step 1/3: Click to place Start Point.";
             else if (step === "placeEnd") instruction.innerText = "Step 2/3: Click to place End Point.";
             else if (step === "placeRadius") instruction.innerText = "Step 3/3: Move mouse to define Arc Curvature and click.";
+        } else if (state === MouseState.CHAMFER_45) {
+            title.innerText = "Tool: Chamfer 45";
+            let lines = this.mouseControl.cornerChamfer45Tool.selectedVisualLines.length;
+            if (lines === 0) {
+                instruction.innerText = "Step 1/2: Select the first perpendicular line at the corner.";
+            } else {
+                instruction.innerText = "Step 2/2: Select the second perpendicular line. The new chamfer edge will be fixed to the size below.";
+            }
+
+            let chamferInputArea = document.createElement('div');
+            chamferInputArea.style.display = "flex";
+            chamferInputArea.style.alignItems = "center";
+            chamferInputArea.style.gap = "8px";
+
+            let chamferLabel = document.createElement('label');
+            chamferLabel.innerText = "Edge Size:";
+
+            let chamferInput = document.createElement('input');
+            chamferInput.type = "number";
+            chamferInput.min = "0.01";
+            chamferInput.step = "0.1";
+            chamferInput.value = this.mouseControl.commandChamferSize;
+            chamferInput.style.width = "90px";
+            chamferInput.addEventListener('change', () => {
+                let val = parseFloat(chamferInput.value);
+                if (!isNaN(val) && val > 0) {
+                    this.mouseControl.commandChamferSize = val;
+                }
+            });
+
+            chamferInputArea.appendChild(chamferLabel);
+            chamferInputArea.appendChild(chamferInput);
+            this.container.appendChild(chamferInputArea);
+        } else if (state === MouseState.FILLET_ARC) {
+            title.innerText = "Tool: Fillet Radius";
+            let lines = this.mouseControl.filletArcTool.selectedVisualLines.length;
+            if (lines === 0) {
+                instruction.innerText = "Step 1/3: Select the first line of the corner.";
+            } else if (lines === 1) {
+                instruction.innerText = "Step 2/3: Select the second line of the corner.";
+            } else {
+                instruction.innerText = "Step 3/3: Click inside the desired corner quadrant to place the fillet arc.";
+            }
+
+            let radiusInputArea = document.createElement('div');
+            radiusInputArea.style.display = "flex";
+            radiusInputArea.style.alignItems = "center";
+            radiusInputArea.style.gap = "8px";
+
+            let radiusLabel = document.createElement('label');
+            radiusLabel.innerText = "Radius:";
+
+            let radiusInput = document.createElement('input');
+            radiusInput.type = "number";
+            radiusInput.min = "0.01";
+            radiusInput.step = "0.1";
+            radiusInput.value = this.mouseControl.commandRadius;
+            radiusInput.style.width = "90px";
+            radiusInput.addEventListener('change', () => {
+                let val = parseFloat(radiusInput.value);
+                if (!isNaN(val) && val > 0) {
+                    this.mouseControl.commandRadius = val;
+                }
+            });
+
+            radiusInputArea.appendChild(radiusLabel);
+            radiusInputArea.appendChild(radiusInput);
+            this.container.appendChild(radiusInputArea);
         } else if (state === MouseState.CIRCLE_3P) {
             title.innerText = "Tool: 3-Point Circle";
             let pts = this.mouseControl.circle3PTool.selectedPoints.length;

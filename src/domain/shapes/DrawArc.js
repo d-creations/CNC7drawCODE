@@ -6,13 +6,17 @@ export class DrawArc extends BaseShape {
     radius;
     startAngle;
     endAngle;
+    startPoint;
+    endpoint;
 
-    constructor(centerPoint, radius, startAngle, endAngle) {
+    constructor(centerPoint, radius, startAngle, endAngle, startPoint = null, endpoint = null) {
         super();
         this.centerPoint = centerPoint;
         this.radius = radius;
         this.startAngle = startAngle;
         this.endAngle = endAngle;
+        this.startPoint = startPoint;
+        this.endpoint = endpoint;
     }
 
     getRenderData() {

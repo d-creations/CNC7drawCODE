@@ -76,6 +76,7 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
             if (c.type === "Distance") dof -= 1;
             if (c.type === "Horizontal" || c.type === "Vertical") dof -= 1;
             if (c.type === "Coincident") dof -= 2;
+            if (c.type === "PointOnArc") dof -= 1;
             if (c.type === "LengthMeasurement") dof -= 1;
             if (c.type === "AngleMeasurement") dof -= 1;
             if (c.type === "RadiusMeasurement") dof -= 1;
@@ -178,6 +179,26 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
 
         // Calculate errors
         let F = activeConstraints.map(c => {
+            const getPointData = (id) => geometries.find(g => g.id === id)?.data;
+            const getCircularGeometry = (id) => {
+                const geo = geometries.find(g => g.id === id);
+                return (geo && (geo.type === "Circle" || geo.type === "Arc")) ? geo : null;
+            };
+            const getLineDistanceToPoint = (lineGeo, point) => {
+                const l_p1 = getPointData(lineGeo.data.start);
+                const l_p2 = getPointData(lineGeo.data.end);
+                if (!l_p1 || !l_p2 || !point) return null;
+
+                const x0 = point.x, y0 = point.y;
+                const x1 = l_p1.x, y1 = l_p1.y;
+                const x2 = l_p2.x, y2 = l_p2.y;
+                const num = (x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1);
+                const den = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                if (den <= 0) return null;
+                return Math.abs(num) / den;
+            };
+            const getCircularCenter = (geo) => getPointData(geo?.data?.center);
+
             if (c.type === "Horizontal") {
                 let p1 = geometries.find(g => g.id === c.targets[0])?.data;
                 let p2 = geometries.find(g => g.id === c.targets[1])?.data;
@@ -224,36 +245,34 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
                     return circGeo.data.r - c.value;
                 }
             }
+            if (c.type === "PointOnArc") {
+                const arcGeo = geometries.find(g => g.id === c.targets[0]);
+                const point = getPointData(c.targets[1]);
+                const center = getCircularCenter(arcGeo);
+                if (arcGeo?.type === "Arc" && point && center) {
+                    const dist = Math.sqrt(Math.pow(point.x - center.x, 2) + Math.pow(point.y - center.y, 2));
+                    return dist - arcGeo.data.r;
+                }
+            }
             if (c.type === "Tangent") {
                 let geo1 = geometries.find(g => g.id === c.targets[0]);
                 let geo2 = geometries.find(g => g.id === c.targets[1]);
                 if (geo1 && geo2) {
                     let lineGeo = geo1.type === "Line" ? geo1 : (geo2.type === "Line" ? geo2 : null);
-                    let circGeo = geo1.type === "Circle" ? geo1 : (geo2.type === "Circle" ? geo2 : null);
+                    let circGeo = getCircularGeometry(geo1.id) ? geo1 : (getCircularGeometry(geo2.id) ? geo2 : null);
 
                     if (lineGeo && circGeo) {
-                        let l_p1 = geometries.find(g => g.id === lineGeo.data.start)?.data;
-                        let l_p2 = geometries.find(g => g.id === lineGeo.data.end)?.data;
-                        let center = geometries.find(g => g.id === circGeo.data.center)?.data;
-                        
-                        if (l_p1 && l_p2 && center) {
-                            let x0 = center.x, y0 = center.y;
-                            let x1 = l_p1.x, y1 = l_p1.y;
-                            let x2 = l_p2.x, y2 = l_p2.y;
-                            
-                            let num = (x2 - x1)*(y1 - y0) - (x1 - x0)*(y2 - y1);
-                            let den = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                            if (den > 0) {
-                                let dist = Math.abs(num) / den;
-                                return dist - circGeo.data.r;
-                            }
+                        const center = getCircularCenter(circGeo);
+                        const dist = getLineDistanceToPoint(lineGeo, center);
+                        if (center && dist !== null) {
+                            return dist - circGeo.data.r;
                         }
                     }
 
-                    // Circle-to-Circle Tangent
-                    if (geo1.type === "Circle" && geo2.type === "Circle") {
-                        let c1 = geometries.find(g => g.id === geo1.data.center)?.data;
-                        let c2 = geometries.find(g => g.id === geo2.data.center)?.data;
+                    // Circle/Arc to Circle/Arc Tangent
+                    if (getCircularGeometry(geo1.id) && getCircularGeometry(geo2.id)) {
+                        let c1 = getCircularCenter(geo1);
+                        let c2 = getCircularCenter(geo2);
                         if (c1 && c2) {
                             let dist = Math.sqrt(Math.pow(c2.x - c1.x, 2) + Math.pow(c2.y - c1.y, 2));
                             return dist - (geo1.data.r + geo2.data.r);
