@@ -8,6 +8,8 @@ export const ActionTypes = {
     CIRCLE_3T: 'CIRCLE_3T',
     ARC: 'ARC',
     ARC_3P: 'ARC_3P',
+    CHAMFER_45: 'CHAMFER_45',
+    FILLET_ARC: 'FILLET_ARC',
     MEASURE_LENGTH: 'MEASURE_LENGTH',
     MEASURE_HORIZONTAL: 'MEASURE_HORIZONTAL',
     MEASURE_VERTICAL: 'MEASURE_VERTICAL',
@@ -17,9 +19,13 @@ export const ActionTypes = {
     MEASURE_ANGLE: 'MEASURE_ANGLE',
     MEASURE_RADIUS: 'MEASURE_RADIUS',
     MEASURE_LINECIRCLE: 'MEASURE_LINECIRCLE',
+    TRIM: 'TRIM',
+    EXTEND: 'EXTEND',
+    CAM_PATH: 'CAM_PATH',
     SELECT: 'SELECT',
     MOVE: 'MOVE',
     PASTE: 'PASTE',
+    RELOAD: 'RELOAD',
     UNDO: 'UNDO',
     REDO: 'REDO',
     ZOOM_IN: 'ZOOM_IN',
@@ -55,6 +61,8 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.CIRCLE_3T, { id: ActionTypes.CIRCLE_3T, label: 'Circle (3T)', hotkey: 'T' });
         this.registerCommand(ActionTypes.ARC, { id: ActionTypes.ARC, label: 'Arc (C+S+E)', hotkey: 'A' });
         this.registerCommand(ActionTypes.ARC_3P, { id: ActionTypes.ARC_3P, label: 'Arc (3P)', hotkey: 'Shift+A' });
+        this.registerCommand(ActionTypes.CHAMFER_45, { id: ActionTypes.CHAMFER_45, label: 'Chamfer 45', hotkey: 'F' });
+        this.registerCommand(ActionTypes.FILLET_ARC, { id: ActionTypes.FILLET_ARC, label: 'Fillet Radius', hotkey: 'Shift+F' });
         
         this.registerCommand(ActionTypes.MEASURE_LENGTH, { id: ActionTypes.MEASURE_LENGTH, label: 'Measure Length', hotkey: 'M' });
         this.registerCommand(ActionTypes.MEASURE_HORIZONTAL, { id: ActionTypes.MEASURE_HORIZONTAL, label: 'Measure Horizontal', hotkey: 'H' });
@@ -66,10 +74,15 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.MEASURE_RADIUS, { id: ActionTypes.MEASURE_RADIUS, label: 'Measure Radius', hotkey: 'R' });
         this.registerCommand(ActionTypes.MEASURE_LINECIRCLE, { id: ActionTypes.MEASURE_LINECIRCLE, label: 'Measure Line/Circle', hotkey: 'Shift+M' });
 
+        this.registerCommand(ActionTypes.TRIM, { id: ActionTypes.TRIM, label: 'Trim Line', hotkey: 'X' });
+        this.registerCommand(ActionTypes.EXTEND, { id: ActionTypes.EXTEND, label: 'Extend Line', hotkey: 'E' });
+        this.registerCommand(ActionTypes.CAM_PATH, { id: ActionTypes.CAM_PATH, label: 'CAM Path', hotkey: 'N' });
+
         this.registerCommand(ActionTypes.ESCAPE, { id: ActionTypes.ESCAPE, label: 'ESC', hotkey: 'Escape' });
         this.registerCommand(ActionTypes.SELECT, { id: ActionTypes.SELECT, label: 'Select', hotkey: 'S' });
         this.registerCommand(ActionTypes.MOVE, { id: ActionTypes.MOVE, label: 'Move', hotkey: 'W' }); // Move mapped to W
         this.registerCommand(ActionTypes.PASTE, { id: ActionTypes.PASTE, label: 'Paste', hotkey: 'Ctrl+V' });
+        this.registerCommand(ActionTypes.RELOAD, { id: ActionTypes.RELOAD, label: 'Reload', hotkey: 'Shift+R' });
         
         this.registerCommand(ActionTypes.UNDO, { id: ActionTypes.UNDO, label: 'Undo', hotkey: 'Ctrl+Z' });
         this.registerCommand(ActionTypes.REDO, { id: ActionTypes.REDO, label: 'Redo', hotkey: 'Ctrl+Y' });

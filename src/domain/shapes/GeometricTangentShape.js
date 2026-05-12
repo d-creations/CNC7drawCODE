@@ -18,12 +18,12 @@ export class GeometricTangentShape extends BaseShape {
         let type2 = this.s2.constructor.name;
         
         let lineShape = type1 === "DrawLine" ? this.s1 : (type2 === "DrawLine" ? this.s2 : null);
-        let circShape = type1 === "DrawCircle" ? this.s1 : (type2 === "DrawCircle" ? this.s2 : null);
+        let circShape = ["DrawCircle", "DrawArc"].includes(type1) ? this.s1 : (["DrawCircle", "DrawArc"].includes(type2) ? this.s2 : null);
 
         let tanX = 0, tanY = 0;
 
         if (lineShape && circShape) {
-            let center = circShape.center;
+            let center = circShape.centerPoint ? circShape.centerPoint.vec4 : circShape.center;
             let l1 = lineShape.startPoint.vec4;
             let l2 = lineShape.endpoint.vec4;
 
@@ -40,9 +40,9 @@ export class GeometricTangentShape extends BaseShape {
             } else {
                 return [];
             }
-        } else if (type1 === "DrawCircle" && type2 === "DrawCircle") {
-            let c1 = this.s1.center;
-            let c2 = this.s2.center;
+        } else if (["DrawCircle", "DrawArc"].includes(type1) && ["DrawCircle", "DrawArc"].includes(type2)) {
+            let c1 = this.s1.centerPoint ? this.s1.centerPoint.vec4 : this.s1.center;
+            let c2 = this.s2.centerPoint ? this.s2.centerPoint.vec4 : this.s2.center;
             let r1 = this.s1.radius;
             let r2 = this.s2.radius;
 

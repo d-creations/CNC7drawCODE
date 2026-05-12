@@ -15,6 +15,7 @@ import { VerticalMeasurementShape } from '../shapes/VerticalMeasurementShape.js'
 import { AngleMeasurementShape } from '../shapes/AngleMeasurementShape.js'
 import { RadiusMeasurementShape } from '../shapes/RadiusMeasurementShape.js'
 import { ClipboardManager } from './ClipboardManager.js'
+import { GCodeGenerator } from '../cam/GCodeGenerator.js'
 
 let selectedobj = {
     exist : false,
@@ -290,6 +291,14 @@ export class DrawBoard{
         }
     }
 
+    reloadState() {
+        this.drawObjects = [];
+        this.clearTempObjects();
+        this.constraintSystem.load({ geometries: [], constraints: [] });
+        this.loadState();
+        this.draw();
+    }
+
     drawLine(startObject,endObject){
         // migrated
     }
@@ -369,6 +378,15 @@ export class DrawBoard{
         this.storage.save(data);
     }
 
+    exportGCode({ startPointId, sequence = [], ...options } = {}) {
+        const sequenceIds = sequence
+            .map(item => typeof item === 'string' ? item : item?.constraintId)
+            .filter(Boolean);
+
+        const generator = new GCodeGenerator(this.constraintSystem, options);
+        return generator.generatePath({ startPointId, sequenceIds });
+    }
+
     loadState() {
         const storedData = this.storage.load();
         if (!storedData || !storedData.geometries) return;
@@ -381,6 +399,7 @@ export class DrawBoard{
             if (geo.type === "Point") {
                 let pObj = new Point(new Vec4(geo.data.x, geo.data.y, 0, 1));
                 pObj.constraintId = geo.id;
+                pObj.isExplicit = geo.isExplicit || false;
                 uiMap.set(geo.id, pObj);
                 this.drawObjects.push(pObj);
             }
@@ -406,7 +425,9 @@ export class DrawBoard{
             } else if (geo.type === "Arc") {
                 let centerPoint = uiMap.get(geo.data.center);
                 if (centerPoint) {
-                    let aObj = new DrawArc(centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle);
+                    let startPoint = uiMap.get(geo.data.start) || null;
+                    let endPoint = uiMap.get(geo.data.end) || null;
+                    let aObj = new DrawArc(centerPoint, geo.data.r, geo.data.startAngle, geo.data.endAngle, startPoint, endPoint);
                     aObj.constraintId = geo.id;
                     this.drawObjects.push(aObj);
                 }
@@ -493,9 +514,26 @@ export class DrawBoard{
                                 obj.centerPoint.vec4.x = centerData.x;
                                 obj.centerPoint.vec4.y = centerData.y;
                             }
+                            let startData = this.constraintSystem.geometries.get(geoData.start)?.data;
+                            let endData = this.constraintSystem.geometries.get(geoData.end)?.data;
+                            if (startData && obj.startPoint && obj.startPoint.vec4) {
+                                obj.startPoint.vec4.x = startData.x;
+                                obj.startPoint.vec4.y = startData.y;
+                            }
+                            if (endData && obj.endpoint && obj.endpoint.vec4) {
+                                obj.endpoint.vec4.x = endData.x;
+                                obj.endpoint.vec4.y = endData.y;
+                            }
                             obj.radius = geoData.r;
-                            obj.startAngle = geoData.startAngle;
-                            obj.endAngle = geoData.endAngle;
+                            if (startData && endData && centerData) {
+                                obj.startAngle = Math.atan2(startData.y - centerData.y, startData.x - centerData.x);
+                                obj.endAngle = Math.atan2(endData.y - centerData.y, endData.x - centerData.x);
+                                geoData.startAngle = obj.startAngle;
+                                geoData.endAngle = obj.endAngle;
+                            } else {
+                                obj.startAngle = geoData.startAngle;
+                                obj.endAngle = geoData.endAngle;
+                            }
                         }
                         else if (obj.constructor.name === "DrawLine") {
                             let startData = this.constraintSystem.geometries.get(geoData.start)?.data;
@@ -513,6 +551,8 @@ export class DrawBoard{
                 }
             }
         }
+
+        this._syncPointAttachmentState();
 
         // Set background color
         this.context.fillStyle = "whitesmoke";
@@ -619,5 +659,25 @@ export class DrawBoard{
         const width = this.canvas.width || 800;
         const textStr = `X${this.cursorPos.x.toFixed(precision)} Y${this.cursorPos.y.toFixed(precision)}`;
         drawStringStatic(textStr, width - 200, 20, 10, "red");
+    }
+    _syncPointAttachmentState() {
+        for (let obj of this.drawObjects) {
+            if (obj.constructor.name === "Point") {
+                obj.isAttachedToShape = false;
+            }
+        }
+
+        for (let obj of this.drawObjects) {
+            if (obj.constructor.name === "DrawLine") {
+                if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
+                if (obj.endpoint) obj.endpoint.isAttachedToShape = true;
+            } else if (obj.constructor.name === "DrawCircle") {
+                if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
+            } else if (obj.constructor.name === "DrawArc") {
+                if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
+                if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
+                if (obj.endpoint) obj.endpoint.isAttachedToShape = true;
+            }
+        }
     }
 }

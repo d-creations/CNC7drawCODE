@@ -102,6 +102,10 @@ export class HitTester {
 
         let distToCenter = Math.sqrt(Math.pow(x - centerCam.x, 2) + Math.pow(y - centerCam.y, 2));
 
+        if (instruction.hitFromCenter) {
+            return distToCenter;
+        }
+
         if (instruction.fill && radius > 0) {
             // For a filled point or circle, distance from center is good enough because anything < radius is a hit
             return distToCenter;

@@ -9,8 +9,8 @@ export class GeometricTangentTool extends BaseTool {
     }
 
     onCanvasClick(x, y) {
-        // Can snap to Lines or Circles
-        let snapped = this.drawBoard.selectStartObject(x, y, ["DrawLine", "DrawCircle"]);
+        // Can snap to Lines, Circles, or Arcs
+        let snapped = this.drawBoard.selectStartObject(x, y, ["DrawLine", "DrawCircle", "DrawArc"]);
         if (!snapped.exist || !snapped.obj || !snapped.obj.constraintId) {
             return; // Must select constrained shapes
         }
@@ -26,7 +26,7 @@ export class GeometricTangentTool extends BaseTool {
             const s2 = shapeObj;
             if(s2 === this.s1) return; // ignore same shape
 
-            // Tangent generally works between (Line & Circle) or (Circle & Circle). 
+            // Tangent generally works between one line and one circular shape, or between two circular shapes.
             // We ignore Line & Line since that's parallelism, not tangency.
             const type1 = this.s1.constructor.name;
             const type2 = s2.constructor.name;

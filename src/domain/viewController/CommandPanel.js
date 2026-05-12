@@ -75,6 +75,26 @@ export class CommandPanel {
         buttonArc3P.innerText = getLabel(ActionTypes.ARC_3P);
         buttonArc3P.addEventListener('click', () => { this.mouseControl.setState(MouseState.ARC_3P); });
 
+        let buttonChamfer45 = document.createElement("Button");
+        buttonChamfer45.innerText = getLabel(ActionTypes.CHAMFER_45);
+        buttonChamfer45.addEventListener('click', () => { this.mouseControl.setState(MouseState.CHAMFER_45); });
+
+        let buttonFilletArc = document.createElement("Button");
+        buttonFilletArc.innerText = getLabel(ActionTypes.FILLET_ARC);
+        buttonFilletArc.addEventListener('click', () => { this.mouseControl.setState(MouseState.FILLET_ARC); });
+
+        let buttonTrim = document.createElement("Button");
+        buttonTrim.innerText = getLabel(ActionTypes.TRIM);
+        buttonTrim.addEventListener('click', () => { this.mouseControl.setState(MouseState.TRIM); });
+
+        let buttonExtend = document.createElement("Button");
+        buttonExtend.innerText = getLabel(ActionTypes.EXTEND);
+        buttonExtend.addEventListener('click', () => { this.mouseControl.setState(MouseState.EXTEND); });
+
+        let buttonCamPath = document.createElement("Button");
+        buttonCamPath.innerText = getLabel(ActionTypes.CAM_PATH);
+        buttonCamPath.addEventListener('click', () => { this.mouseControl.setState(MouseState.CAM_PATH); });
+
         let buttonMeasureLength = document.createElement("Button");
         buttonMeasureLength.innerText = getLabel(ActionTypes.MEASURE_LENGTH);
         buttonMeasureLength.addEventListener('click', () => { this.mouseControl.setState(MouseState.MEASURE_LENGTH); });
@@ -126,6 +146,11 @@ export class CommandPanel {
         circleGroup.appendChild(buttonCircle3T);
         circleGroup.appendChild(buttonArc);
         circleGroup.appendChild(buttonArc3P);
+        circleGroup.appendChild(buttonChamfer45);
+        circleGroup.appendChild(buttonFilletArc);
+        circleGroup.appendChild(buttonTrim);
+        circleGroup.appendChild(buttonExtend);
+        circleGroup.appendChild(buttonCamPath);
 
         let measureGroup = document.createElement("div");
         measureGroup.style.border = "1px solid #ccc";
@@ -179,6 +204,13 @@ export class CommandPanel {
             this.mouseControl.setState(MouseState.PASTE);
         });
 
+        let buttonReload = document.createElement("Button");
+        buttonReload.innerText = getLabel(ActionTypes.RELOAD);
+        buttonReload.addEventListener('click', () => {
+            this.mouseControl.setState(MouseState.SELECT);
+            this.mouseControl.drawBoard.reloadState();
+        });
+
         let buttonUndo = document.createElement("Button");
         buttonUndo.innerText = getLabel(ActionTypes.UNDO);
         buttonUndo.addEventListener('click', () => { this.mouseControl.drawBoard.undo(); });
@@ -197,6 +229,7 @@ export class CommandPanel {
 
         menudiv.appendChild(buttonMove);
         menudiv.appendChild(buttonPaste);
+        menudiv.appendChild(buttonReload);
         menudiv.appendChild(buttonUndo);
         menudiv.appendChild(buttonRedo);
         menudiv.appendChild(buttonZoomIn);
@@ -264,12 +297,169 @@ export class CommandPanel {
             if (step === "placeStart") instruction.innerText = "Step 1/3: Click to place Start Point.";
             else if (step === "placeEnd") instruction.innerText = "Step 2/3: Click to place End Point.";
             else if (step === "placeRadius") instruction.innerText = "Step 3/3: Move mouse to define Arc Curvature and click.";
+        } else if (state === MouseState.CHAMFER_45) {
+            title.innerText = "Tool: Chamfer 45";
+            let lines = this.mouseControl.cornerChamfer45Tool.selectedVisualLines.length;
+            if (lines === 0) {
+                instruction.innerText = "Step 1/2: Select the first perpendicular line at the corner.";
+            } else {
+                instruction.innerText = "Step 2/2: Select the second perpendicular line. The new chamfer edge will be fixed to the size below.";
+            }
+
+            let chamferInputArea = document.createElement('div');
+            chamferInputArea.style.display = "flex";
+            chamferInputArea.style.alignItems = "center";
+            chamferInputArea.style.gap = "8px";
+
+            let chamferLabel = document.createElement('label');
+            chamferLabel.innerText = "Edge Size:";
+
+            let chamferInput = document.createElement('input');
+            chamferInput.type = "number";
+            chamferInput.min = "0.01";
+            chamferInput.step = "0.1";
+            chamferInput.value = this.mouseControl.commandChamferSize;
+            chamferInput.style.width = "90px";
+            chamferInput.addEventListener('change', () => {
+                let val = parseFloat(chamferInput.value);
+                if (!isNaN(val) && val > 0) {
+                    this.mouseControl.commandChamferSize = val;
+                }
+            });
+
+            chamferInputArea.appendChild(chamferLabel);
+            chamferInputArea.appendChild(chamferInput);
+            this.container.appendChild(chamferInputArea);
+        } else if (state === MouseState.TRIM) {
+            title.innerText = "Tool: Trim Line";
+            if (this.mouseControl.trimTool.step === 0) {
+                instruction.innerText = "Step 1/2: Select the boundary shape (line, circle, arc) to trim with.";
+            } else {
+                instruction.innerText = "Step 2/2: Click on the segment of a line you want to remove. It will be trimmed back to the boundary.";
+            }
+        } else if (state === MouseState.EXTEND) {
+            title.innerText = "Tool: Extend Line";
+            if (this.mouseControl.extendTool.step === 0) {
+                instruction.innerText = "Step 1/2: Select the boundary shape (line, circle, arc) to extend to.";
+            } else {
+                instruction.innerText = "Step 2/2: Click near the end of a line you want to extend. It will extend to the boundary.";
+            }
+        } else if (state === MouseState.FILLET_ARC) {
+            title.innerText = "Tool: Fillet Radius";
+            let lines = this.mouseControl.filletArcTool.selectedVisualLines.length;
+            if (lines === 0) {
+                instruction.innerText = "Step 1/3: Select the first line of the corner.";
+            } else if (lines === 1) {
+                instruction.innerText = "Step 2/3: Select the second line of the corner.";
+            } else {
+                instruction.innerText = "Step 3/3: Click inside the desired corner quadrant to place the fillet arc.";
+            }
+
+            let radiusInputArea = document.createElement('div');
+            radiusInputArea.style.display = "flex";
+            radiusInputArea.style.alignItems = "center";
+            radiusInputArea.style.gap = "8px";
+
+            let radiusLabel = document.createElement('label');
+            radiusLabel.innerText = "Radius:";
+
+            let radiusInput = document.createElement('input');
+            radiusInput.type = "number";
+            radiusInput.min = "0.01";
+            radiusInput.step = "0.1";
+            radiusInput.value = this.mouseControl.commandRadius;
+            radiusInput.style.width = "90px";
+            radiusInput.addEventListener('change', () => {
+                let val = parseFloat(radiusInput.value);
+                if (!isNaN(val) && val > 0) {
+                    this.mouseControl.commandRadius = val;
+                }
+            });
+
+            radiusInputArea.appendChild(radiusLabel);
+            radiusInputArea.appendChild(radiusInput);
+            this.container.appendChild(radiusInputArea);
         } else if (state === MouseState.CIRCLE_3P) {
             title.innerText = "Tool: 3-Point Circle";
             let pts = this.mouseControl.circle3PTool.selectedPoints.length;
             if (pts === 0) instruction.innerText = "Step 1/3: Select 1st point";
             else if (pts === 1) instruction.innerText = "Step 2/3: Select 2nd point";
             else if (pts === 2) instruction.innerText = "Step 3/3: Select 3rd point (final)";
+        } else if (state === MouseState.CAM_PATH) {
+            const camTool = this.mouseControl.camSelectionTool;
+            title.innerText = "Tool: CAM Path";
+
+            if (!camTool.startPointId) {
+                instruction.innerText = "Step 1: Click a start point.";
+            } else {
+                instruction.innerText = "Step 2: Click an ordered chain of points, lines, arcs, or circles to build the toolpath.";
+            }
+
+            const status = document.createElement('div');
+            status.style.fontSize = '12px';
+            status.style.maxWidth = '420px';
+            status.style.textAlign = 'center';
+            status.style.color = camTool.lastError ? '#ff8a80' : '#b7f7c5';
+            status.innerText = camTool.lastError
+                ? camTool.lastError
+                : `Start: ${camTool.startPointId || '-'} | Segments: ${camTool.sequenceIds.length}`;
+
+            const controls = document.createElement('div');
+            controls.style.display = 'flex';
+            controls.style.gap = '8px';
+            controls.style.flexWrap = 'wrap';
+            controls.style.justifyContent = 'center';
+
+            const makeButton = (label, onClick) => {
+                const button = document.createElement('button');
+                button.innerText = label;
+                button.style.padding = '4px 10px';
+                button.style.cursor = 'pointer';
+                button.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClick();
+                    this.render();
+                };
+                return button;
+            };
+
+            controls.appendChild(makeButton('Export', () => {
+                camTool.exportSelection();
+            }));
+            controls.appendChild(makeButton('Undo Last', () => {
+                camTool.undoLastSelection();
+            }));
+            controls.appendChild(makeButton('Clear', () => {
+                camTool.clearSelection();
+            }));
+            controls.appendChild(makeButton('Copy', () => {
+                if (!camTool.lastGCode) {
+                    camTool.exportSelection();
+                }
+                if (camTool.lastGCode && navigator?.clipboard?.writeText) {
+                    navigator.clipboard.writeText(camTool.lastGCode);
+                }
+            }));
+
+            const output = document.createElement('textarea');
+            output.readOnly = true;
+            output.value = camTool.lastGCode;
+            output.placeholder = 'G-code output will appear here after you select a valid CAM path.';
+            output.style.width = '420px';
+            output.style.height = '180px';
+            output.style.backgroundColor = '#1e1e1e';
+            output.style.color = '#f5f5f5';
+            output.style.border = '1px solid #555';
+            output.style.borderRadius = '4px';
+            output.style.padding = '8px';
+
+            this.container.appendChild(title);
+            this.container.appendChild(instruction);
+            this.container.appendChild(status);
+            this.container.appendChild(controls);
+            this.container.appendChild(output);
+            return;
         } else if (state === MouseState.MEASURE_LENGTH) {
             title.innerText = "Tool: Measure Length";
             let step = this.mouseControl.lengthMeasurementTool.step;

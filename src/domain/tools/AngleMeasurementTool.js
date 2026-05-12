@@ -19,20 +19,18 @@ export class AngleMeasurementTool extends BaseTool {
             } else if (this.step === 1) {
                 const line2 = hit.obj;
                 if (line2 !== this.line1) {
-                    
-                    // Calc initial angle
-                    let a1 = Math.atan2(this.line1.endpoint.vec4.y - this.line1.startPoint.vec4.y, this.line1.endpoint.vec4.x - this.line1.startPoint.vec4.x);
-                    let a2 = Math.atan2(line2.endpoint.vec4.y - line2.startPoint.vec4.y, line2.endpoint.vec4.x - line2.startPoint.vec4.x);
-                    let diff = a2 - a1;
-                    while (diff > Math.PI) diff -= 2 * Math.PI;
-                    while (diff < -Math.PI) diff += 2 * Math.PI;
+                    const angleData = AngleMeasurementShape.describeAngle(this.line1, line2);
+                    if (!angleData) {
+                        this.cancel();
+                        return;
+                    }
 
                     let measurementId = this.drawBoard.constraintSystem.addGeometry({
                         type: "AngleMeasurement",
                         data: {
                             l1Id: this.line1.constraintId,
                             l2Id: line2.constraintId,
-                            value: Math.abs(diff)
+                            value: angleData.angle
                         },
                         fixed: false
                     });
@@ -41,7 +39,7 @@ export class AngleMeasurementTool extends BaseTool {
                     this.drawBoard.constraintSystem.addConstraint({
                         type: "AngleMeasurement",
                         targets: [this.line1.startPoint.constraintId, this.line1.endpoint.constraintId, line2.startPoint.constraintId, line2.endpoint.constraintId],
-                        value: Math.abs(diff),
+                        value: angleData.angle,
                         geometryId: measurementId // Link it to the measurement visual
                     });
 
@@ -52,6 +50,8 @@ export class AngleMeasurementTool extends BaseTool {
                     this.step = 0;
                     this.line1 = null;
                     this.drawBoard.needsUpdate = true;
+                    this.drawBoard.saveState();
+                    this.drawBoard.draw();
                 }
             }
         }

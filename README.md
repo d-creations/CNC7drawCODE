@@ -1,24 +1,34 @@
 # CNC7drawCODE
 
-Sketch with js for CNC paths.
+Sketch with JavaScript for CNC paths.
 
-This project can be run in two ways:
-1. **As a Desktop Application:** Using Electron.
-2. **As a Web Application:** Using a FastAPI backend server via Docker.
+The goal of the project is to allow users to create a 2D sketch and generate NC code.
 
-## 1. Run as a Desktop Application (Electron)
+## CAM Module
 
-Make sure you have Node.js installed.
+The project now includes a small CAM post-processor at `src/domain/cam/GCodeGenerator.js`.
+It reads the solved sketch geometry from the constraint system and emits basic 2D milling paths:
 
-```bash
-# Install dependencies
-npm install
+- `Point` -> `G1 X Y`
+- `Line` -> `G1 X Y` with automatic endpoint orientation from the current tool position
+- `Arc` -> `G2` or `G3` with incremental `I` and `J`
+- `Circle` -> two half-circle `G2`/`G3` moves with incremental `I` and `J`
 
-# Start the desktop app
-npm start
+You can call it through the board API:
+
+```js
+const gcode = drawBoard.exportGCode({
+	startPointId: 'point_1',
+	sequence: ['line_1', 'arc_1', 'point_7'],
+	feedRate: 250
+});
 ```
 
-## 2. Run as a Web Application (Docker)
+This is a CAM layer only: the dependency graph and GCS still solve sketch geometry first, and the post-processor converts the solved result into machine moves.
+
+For a quick demo, this project can be run using a Docker image as a web application with a FastAPI backend.
+
+## Run as a Web Application (Docker)
 
 Make sure you have Docker installed and Docker Compose.
 

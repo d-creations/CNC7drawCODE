@@ -79,6 +79,12 @@ export class KeyboardManager {
             case ActionTypes.ARC_3P:
                 this.mouseControl.setState(MouseState.ARC_3P);
                 break;
+            case ActionTypes.CHAMFER_45:
+                this.mouseControl.setState(MouseState.CHAMFER_45);
+                break;
+            case ActionTypes.FILLET_ARC:
+                this.mouseControl.setState(MouseState.FILLET_ARC);
+                break;
             case ActionTypes.MEASURE_LENGTH:
                 this.mouseControl.setState(MouseState.MEASURE_LENGTH);
                 break;
@@ -94,6 +100,15 @@ export class KeyboardManager {
             case ActionTypes.MEASURE_RADIUS:
                 this.mouseControl.setState(MouseState.MEASURE_RADIUS);
                 break;
+            case ActionTypes.TRIM:
+                this.mouseControl.setState(MouseState.TRIM);
+                break;
+            case ActionTypes.EXTEND:
+                this.mouseControl.setState(MouseState.EXTEND);
+                break;
+            case ActionTypes.CAM_PATH:
+                this.mouseControl.setState(MouseState.CAM_PATH);
+                break;
             case ActionTypes.SELECT:
                 this.mouseControl.setState(MouseState.SELECT);
                 break;
@@ -102,6 +117,10 @@ export class KeyboardManager {
                 break;
             case ActionTypes.PASTE:
                 this.mouseControl.setState(MouseState.PASTE);
+                break;
+            case ActionTypes.RELOAD:
+                this.mouseControl.setState(MouseState.SELECT);
+                this.drawBoard.reloadState();
                 break;
             case ActionTypes.UNDO:
                 this.drawBoard.undo();
