@@ -15,6 +15,7 @@ import { VerticalMeasurementShape } from '../shapes/VerticalMeasurementShape.js'
 import { AngleMeasurementShape } from '../shapes/AngleMeasurementShape.js'
 import { RadiusMeasurementShape } from '../shapes/RadiusMeasurementShape.js'
 import { ClipboardManager } from './ClipboardManager.js'
+import { GCodeGenerator } from '../cam/GCodeGenerator.js'
 
 let selectedobj = {
     exist : false,
@@ -377,6 +378,15 @@ export class DrawBoard{
         this.storage.save(data);
     }
 
+    exportGCode({ startPointId, sequence = [], ...options } = {}) {
+        const sequenceIds = sequence
+            .map(item => typeof item === 'string' ? item : item?.constraintId)
+            .filter(Boolean);
+
+        const generator = new GCodeGenerator(this.constraintSystem, options);
+        return generator.generatePath({ startPointId, sequenceIds });
+    }
+
     loadState() {
         const storedData = this.storage.load();
         if (!storedData || !storedData.geometries) return;
@@ -389,6 +399,7 @@ export class DrawBoard{
             if (geo.type === "Point") {
                 let pObj = new Point(new Vec4(geo.data.x, geo.data.y, 0, 1));
                 pObj.constraintId = geo.id;
+                pObj.isExplicit = geo.isExplicit || false;
                 uiMap.set(geo.id, pObj);
                 this.drawObjects.push(pObj);
             }
@@ -541,6 +552,8 @@ export class DrawBoard{
             }
         }
 
+        this._syncPointAttachmentState();
+
         // Set background color
         this.context.fillStyle = "whitesmoke";
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -646,5 +659,25 @@ export class DrawBoard{
         const width = this.canvas.width || 800;
         const textStr = `X${this.cursorPos.x.toFixed(precision)} Y${this.cursorPos.y.toFixed(precision)}`;
         drawStringStatic(textStr, width - 200, 20, 10, "red");
+    }
+    _syncPointAttachmentState() {
+        for (let obj of this.drawObjects) {
+            if (obj.constructor.name === "Point") {
+                obj.isAttachedToShape = false;
+            }
+        }
+
+        for (let obj of this.drawObjects) {
+            if (obj.constructor.name === "DrawLine") {
+                if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
+                if (obj.endpoint) obj.endpoint.isAttachedToShape = true;
+            } else if (obj.constructor.name === "DrawCircle") {
+                if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
+            } else if (obj.constructor.name === "DrawArc") {
+                if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
+                if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
+                if (obj.endpoint) obj.endpoint.isAttachedToShape = true;
+            }
+        }
     }
 }

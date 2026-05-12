@@ -6,6 +6,7 @@ import { MouseControl, MouseState } from '../../src/domain/viewController/MouseC
 import { HistoryManager } from "../../src/domain/storage/HistoryManager.js";
 import { LocalSketchStorage } from "../../src/domain/storage/LocalSketchStorage.js";
 import { LengthMeasurementTool } from "../../src/domain/tools/LengthMeasurementTool.js";
+import { PointTool } from "../../src/domain/tools/PointTool.js";
 import { Camera } from '../../src/domain/viewController/Camera.js';
 
 // Global DOM shim
@@ -56,6 +57,13 @@ describe("Measurement Anchor Drag and History Integration", () => {
 
     it("should allow dragging a measurement anchor, sync it to geo data, and support undo/redo", () => {
         // Setup a measurement using the tool to ensure exact valid states
+        const pointTool = new PointTool(drawBoard, drawBoard.constraintSystem);
+        
+        // P1
+        pointTool.onCanvasClick(100, 100);
+        // P2
+        pointTool.onCanvasClick(200, 100);
+
         const lengthTool = new LengthMeasurementTool(drawBoard);
         
         // P1

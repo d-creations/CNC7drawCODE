@@ -57,8 +57,8 @@ describe("ConstraintSystem orphaned constraint cleanup", () => {
 
     it("cascades deletion to LengthMeasurement when a point is removed", () => {
         const cs = new ConstraintSystem();
-        const p1 = { id: "p1", type: "Point", data: { x: 0, y: 0 } };
-        const p2 = { id: "p2", type: "Point", data: { x: 1, y: 1 } };
+        const p1 = { id: "p1", type: "Point", isExplicit: true, data: { x: 0, y: 0 } };
+        const p2 = { id: "p2", type: "Point", isExplicit: true, data: { x: 1, y: 1 } };
         const meas = { id: "m1", type: "LengthMeasurement", data: { p1Id: "p1", p2Id: "p2", value: 10 } };
         
         cs.addGeometry(p1);

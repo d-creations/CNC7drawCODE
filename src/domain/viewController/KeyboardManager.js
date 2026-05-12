@@ -100,6 +100,15 @@ export class KeyboardManager {
             case ActionTypes.MEASURE_RADIUS:
                 this.mouseControl.setState(MouseState.MEASURE_RADIUS);
                 break;
+            case ActionTypes.TRIM:
+                this.mouseControl.setState(MouseState.TRIM);
+                break;
+            case ActionTypes.EXTEND:
+                this.mouseControl.setState(MouseState.EXTEND);
+                break;
+            case ActionTypes.CAM_PATH:
+                this.mouseControl.setState(MouseState.CAM_PATH);
+                break;
             case ActionTypes.SELECT:
                 this.mouseControl.setState(MouseState.SELECT);
                 break;

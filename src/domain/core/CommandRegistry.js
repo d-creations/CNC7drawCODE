@@ -19,6 +19,9 @@ export const ActionTypes = {
     MEASURE_ANGLE: 'MEASURE_ANGLE',
     MEASURE_RADIUS: 'MEASURE_RADIUS',
     MEASURE_LINECIRCLE: 'MEASURE_LINECIRCLE',
+    TRIM: 'TRIM',
+    EXTEND: 'EXTEND',
+    CAM_PATH: 'CAM_PATH',
     SELECT: 'SELECT',
     MOVE: 'MOVE',
     PASTE: 'PASTE',
@@ -70,6 +73,10 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.MEASURE_ANGLE, { id: ActionTypes.MEASURE_ANGLE, label: 'Measure Angle', hotkey: 'G' });
         this.registerCommand(ActionTypes.MEASURE_RADIUS, { id: ActionTypes.MEASURE_RADIUS, label: 'Measure Radius', hotkey: 'R' });
         this.registerCommand(ActionTypes.MEASURE_LINECIRCLE, { id: ActionTypes.MEASURE_LINECIRCLE, label: 'Measure Line/Circle', hotkey: 'Shift+M' });
+
+        this.registerCommand(ActionTypes.TRIM, { id: ActionTypes.TRIM, label: 'Trim Line', hotkey: 'X' });
+        this.registerCommand(ActionTypes.EXTEND, { id: ActionTypes.EXTEND, label: 'Extend Line', hotkey: 'E' });
+        this.registerCommand(ActionTypes.CAM_PATH, { id: ActionTypes.CAM_PATH, label: 'CAM Path', hotkey: 'N' });
 
         this.registerCommand(ActionTypes.ESCAPE, { id: ActionTypes.ESCAPE, label: 'ESC', hotkey: 'Escape' });
         this.registerCommand(ActionTypes.SELECT, { id: ActionTypes.SELECT, label: 'Select', hotkey: 'S' });
