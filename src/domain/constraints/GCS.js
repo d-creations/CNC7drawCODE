@@ -9,6 +9,51 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
         super();
     }
 
+    normalizeAngle(angle) {
+        while (angle < 0) angle += 2 * Math.PI;
+        while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
+        return angle;
+    }
+
+    shortestArc(startAngle, endAngle) {
+        const start = this.normalizeAngle(startAngle);
+        const end = this.normalizeAngle(endAngle);
+        const ccw = this.normalizeAngle(end - start);
+
+        return ccw <= Math.PI ? ccw : 2 * Math.PI - ccw;
+    }
+
+    lineIntersectionFromPoints(p1s, p1e, p2s, p2e) {
+        const denom = (p1s.x - p1e.x) * (p2s.y - p2e.y) - (p1s.y - p1e.y) * (p2s.x - p2e.x);
+        if (Math.abs(denom) < 0.0001) return null;
+
+        const intersectX = ((p1s.x * p1e.y - p1s.y * p1e.x) * (p2s.x - p2e.x) - (p1s.x - p1e.x) * (p2s.x * p2e.y - p2s.y * p2e.x)) / denom;
+        const intersectY = ((p1s.x * p1e.y - p1s.y * p1e.x) * (p2s.y - p2e.y) - (p1s.y - p1e.y) * (p2s.x * p2e.y - p2s.y * p2e.x)) / denom;
+        return { x: intersectX, y: intersectY };
+    }
+
+    getRayAngleFromLine(startPoint, endPoint, intersection) {
+        const startDx = startPoint.x - intersection.x;
+        const startDy = startPoint.y - intersection.y;
+        const endDx = endPoint.x - intersection.x;
+        const endDy = endPoint.y - intersection.y;
+
+        const startDist = startDx * startDx + startDy * startDy;
+        const endDist = endDx * endDx + endDy * endDy;
+        const rayPoint = endDist >= startDist ? endPoint : startPoint;
+
+        return Math.atan2(rayPoint.y - intersection.y, rayPoint.x - intersection.x);
+    }
+
+    measureAngleFromLines(p1s, p1e, p2s, p2e) {
+        const intersection = this.lineIntersectionFromPoints(p1s, p1e, p2s, p2e);
+        if (!intersection) return null;
+
+        const a1 = this.getRayAngleFromLine(p1s, p1e, intersection);
+        const a2 = this.getRayAngleFromLine(p2s, p2e, intersection);
+        return this.shortestArc(a1, a2);
+    }
+
     /**
      * Estimates Degrees of Freedom (DOF) for a given island of geometry.
      * Each 2D Point adds 2 DOF.
@@ -252,12 +297,10 @@ export class GeometricConstraintSolver extends BaseNonLinearSolver {
                 let p2e = geometries.find(g => g.id === c.targets[3])?.data;
                 
                 if (p1s && p1e && p2s && p2e && c.value !== undefined) {
-                    let a1 = Math.atan2(p1e.y - p1s.y, p1e.x - p1s.x);
-                    let a2 = Math.atan2(p2e.y - p2s.y, p2e.x - p2s.x);
-                    let diff = a2 - a1;
-                    while (diff > Math.PI) diff -= 2 * Math.PI;
-                    while (diff < -Math.PI) diff += 2 * Math.PI;
-                    return Math.abs(diff) - c.value;
+                    const angle = this.measureAngleFromLines(p1s, p1e, p2s, p2e);
+                    if (angle !== null) {
+                        return angle - c.value;
+                    }
                 }
             }
             return 0; // Unhandled

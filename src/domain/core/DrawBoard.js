@@ -290,6 +290,14 @@ export class DrawBoard{
         }
     }
 
+    reloadState() {
+        this.drawObjects = [];
+        this.clearTempObjects();
+        this.constraintSystem.load({ geometries: [], constraints: [] });
+        this.loadState();
+        this.draw();
+    }
+
     drawLine(startObject,endObject){
         // migrated
     }

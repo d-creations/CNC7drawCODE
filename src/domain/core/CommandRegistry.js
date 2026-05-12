@@ -20,6 +20,7 @@ export const ActionTypes = {
     SELECT: 'SELECT',
     MOVE: 'MOVE',
     PASTE: 'PASTE',
+    RELOAD: 'RELOAD',
     UNDO: 'UNDO',
     REDO: 'REDO',
     ZOOM_IN: 'ZOOM_IN',
@@ -70,6 +71,7 @@ export class CommandRegistry {
         this.registerCommand(ActionTypes.SELECT, { id: ActionTypes.SELECT, label: 'Select', hotkey: 'S' });
         this.registerCommand(ActionTypes.MOVE, { id: ActionTypes.MOVE, label: 'Move', hotkey: 'W' }); // Move mapped to W
         this.registerCommand(ActionTypes.PASTE, { id: ActionTypes.PASTE, label: 'Paste', hotkey: 'Ctrl+V' });
+        this.registerCommand(ActionTypes.RELOAD, { id: ActionTypes.RELOAD, label: 'Reload', hotkey: 'Shift+R' });
         
         this.registerCommand(ActionTypes.UNDO, { id: ActionTypes.UNDO, label: 'Undo', hotkey: 'Ctrl+Z' });
         this.registerCommand(ActionTypes.REDO, { id: ActionTypes.REDO, label: 'Redo', hotkey: 'Ctrl+Y' });

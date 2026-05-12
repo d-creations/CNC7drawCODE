@@ -103,6 +103,10 @@ export class KeyboardManager {
             case ActionTypes.PASTE:
                 this.mouseControl.setState(MouseState.PASTE);
                 break;
+            case ActionTypes.RELOAD:
+                this.mouseControl.setState(MouseState.SELECT);
+                this.drawBoard.reloadState();
+                break;
             case ActionTypes.UNDO:
                 this.drawBoard.undo();
                 break;

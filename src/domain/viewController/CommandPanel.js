@@ -179,6 +179,13 @@ export class CommandPanel {
             this.mouseControl.setState(MouseState.PASTE);
         });
 
+        let buttonReload = document.createElement("Button");
+        buttonReload.innerText = getLabel(ActionTypes.RELOAD);
+        buttonReload.addEventListener('click', () => {
+            this.mouseControl.setState(MouseState.SELECT);
+            this.mouseControl.drawBoard.reloadState();
+        });
+
         let buttonUndo = document.createElement("Button");
         buttonUndo.innerText = getLabel(ActionTypes.UNDO);
         buttonUndo.addEventListener('click', () => { this.mouseControl.drawBoard.undo(); });
@@ -197,6 +204,7 @@ export class CommandPanel {
 
         menudiv.appendChild(buttonMove);
         menudiv.appendChild(buttonPaste);
+        menudiv.appendChild(buttonReload);
         menudiv.appendChild(buttonUndo);
         menudiv.appendChild(buttonRedo);
         menudiv.appendChild(buttonZoomIn);

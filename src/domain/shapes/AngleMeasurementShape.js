@@ -12,27 +12,83 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         this.type = "AngleMeasurement";
     }
 
+    static normalizeAngle(angle) {
+        while (angle < 0) angle += 2 * Math.PI;
+        while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
+        return angle;
+    }
+
+    static shortestArc(startAngle, endAngle) {
+        const start = AngleMeasurementShape.normalizeAngle(startAngle);
+        const end = AngleMeasurementShape.normalizeAngle(endAngle);
+        const ccw = AngleMeasurementShape.normalizeAngle(end - start);
+
+        if (ccw <= Math.PI) {
+            return {
+                a1: start,
+                a2: start + ccw,
+                angle: ccw,
+                midAng: start + ccw / 2
+            };
+        }
+
+        const cw = 2 * Math.PI - ccw;
+        return {
+            a1: end,
+            a2: end + cw,
+            angle: cw,
+            midAng: end + cw / 2
+        };
+    }
+
+    static getRayAngle(line, intersection) {
+        const candidates = [line.startPoint?.vec4, line.endpoint?.vec4].filter(Boolean);
+        if (candidates.length === 0) return null;
+
+        let rayPoint = candidates[0];
+        let maxDistance = -Infinity;
+        for (const point of candidates) {
+            const dx = point.x - intersection.x;
+            const dy = point.y - intersection.y;
+            const distance = dx * dx + dy * dy;
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                rayPoint = point;
+            }
+        }
+
+        return Math.atan2(rayPoint.y - intersection.y, rayPoint.x - intersection.x);
+    }
+
+    static describeAngle(line1, line2) {
+        const intersection = Geometry.lineIntersection(line1, line2);
+        if (!intersection) return null;
+
+        const a1 = AngleMeasurementShape.getRayAngle(line1, intersection);
+        const a2 = AngleMeasurementShape.getRayAngle(line2, intersection);
+        if (a1 === null || a2 === null) return null;
+
+        return {
+            intersection,
+            ...AngleMeasurementShape.shortestArc(a1, a2)
+        };
+    }
+
     getRenderData() {
         if (!this.l1 || !this.l2) return [];
-        const intersection = Geometry.lineIntersection(this.l1, this.l2);
-        if (!intersection) return [];
-        
-        let a1 = Math.atan2(this.l1.endpoint.vec4.y - this.l1.startPoint.vec4.y, this.l1.endpoint.vec4.x - this.l1.startPoint.vec4.x);
-        let a2 = Math.atan2(this.l2.endpoint.vec4.y - this.l2.startPoint.vec4.y, this.l2.endpoint.vec4.x - this.l2.startPoint.vec4.x);
-        
-        let angle = Math.abs(a2 - a1);
-        if (angle > Math.PI) angle = 2 * Math.PI - angle;
-        const deg = (angle * 180 / Math.PI).toFixed(1);
+        const angleData = AngleMeasurementShape.describeAngle(this.l1, this.l2);
+        if (!angleData) return [];
+
+        const deg = (angleData.angle * 180 / Math.PI).toFixed(1);
         const textToDraw = deg + ' deg';
-        const midAng = (a1 + a2) / 2;
 
         return [{
             primitive: 'dimension_angle',
-            worldIntersection: { x: intersection.x, y: intersection.y },
+            worldIntersection: { x: angleData.intersection.x, y: angleData.intersection.y },
             radius: this.radius,
-            a1: Math.min(a1, a2),
-            a2: Math.max(a1, a2),
-            midAng: midAng,
+            a1: angleData.a1,
+            a2: angleData.a2,
+            midAng: angleData.midAng,
             textAnchor: this.textAnchor,
             text: textToDraw,
             color: this.color
@@ -62,16 +118,8 @@ export class AngleMeasurementShape extends BaseMeasurementShape {
         });
 
         // --- 3) Angle Constraining Field (Modify Line 2) ---
-        // Calculate current angle using real direction vectors
-        let a1 = Math.atan2(this.l1.endpoint.vec4.y - this.l1.startPoint.vec4.y, this.l1.endpoint.vec4.x - this.l1.startPoint.vec4.x);
-        let a2 = Math.atan2(this.l2.endpoint.vec4.y - this.l2.startPoint.vec4.y, this.l2.endpoint.vec4.x - this.l2.startPoint.vec4.x);
-        
-        let diff = a2 - a1;
-        // Normalize diff to -PI to PI
-        while (diff > Math.PI) diff -= 2 * Math.PI;
-        while (diff < -Math.PI) diff += 2 * Math.PI;
-        
-        let currentDeg = Math.abs(diff) * 180 / Math.PI;
+        const angleData = AngleMeasurementShape.describeAngle(this.l1, this.l2);
+        let currentDeg = angleData ? angleData.angle * 180 / Math.PI : 0;
 
         let angleConstraintInput = editor.createNumberField("Angle (°)", currentDeg, (val) => {
             let targetRad = val * Math.PI / 180;
