@@ -2,7 +2,11 @@
   "name": "cnc7drawnccode",
   "version": "1.0.0",
   "description": "Sketch CNC Code",
-  "main": "main.js",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./demo": "./src/domain/core/CNC3drawCODE.js"
+  },
   "type": "module",
   "scripts": {
     "test": "node --test tests/**/*.test.js"

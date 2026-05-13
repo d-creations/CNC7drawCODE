@@ -217,6 +217,11 @@ export class DrawBoard{
         if (this.onSelectionChanged) {
             this.onSelectionChanged(displayObj);
         }
+        if (this.canvas) {
+            this.canvas.dispatchEvent(new CustomEvent('selection-changed', {
+                detail: { selected: this.selectedObjects, object: displayObj }
+            }));
+        }
 
         this.hoverObject(x, y); // update colors
     }
@@ -254,6 +259,11 @@ export class DrawBoard{
                 this.hoverObj = displayHover;
                 if (this.onSelectionChanged) {
                     this.onSelectionChanged(this.hoverObj);
+                }
+                if (this.canvas) {
+                    this.canvas.dispatchEvent(new CustomEvent('selection-changed', {
+                        detail: { selected: this.selectedObjects, object: this.hoverObj }
+                    }));
                 }
             }
         }
@@ -334,6 +344,11 @@ export class DrawBoard{
             this.hoverObj = null;
             if(this.onSelectionChanged) {
                 this.onSelectionChanged(null);
+            }
+            if (this.canvas) {
+                this.canvas.dispatchEvent(new CustomEvent('selection-changed', {
+                    detail: { selected: [], object: null }
+                }));
             }
         }
         
