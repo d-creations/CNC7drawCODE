@@ -1,9 +1,11 @@
 import { MouseState } from './MouseControl.js';
 import { ActionTypes, globalCommandRegistry } from '../core/CommandRegistry.js';
+import { ToolInstructionProvider } from './ToolInstructionProvider.js';
 
 export class CommandPanel {
     constructor(parentDiv, mouseControl) {
         this.mouseControl = mouseControl;
+        this.instructionProvider = new ToolInstructionProvider(mouseControl);
         
         this.container = document.createElement('div');
         this.container.className = "command-panel";
@@ -252,11 +254,133 @@ export class CommandPanel {
         }
     }
 
+    createInstructionTitle(text) {
+        const title = document.createElement('div');
+        title.style.fontWeight = 'bold';
+        title.style.fontSize = '14px';
+        title.style.textTransform = 'uppercase';
+        title.style.letterSpacing = '1px';
+        title.innerText = text;
+        return title;
+    }
+
+    createInstructionText(text) {
+        const instruction = document.createElement('div');
+        instruction.style.fontSize = '13px';
+        instruction.style.color = '#ccc';
+        instruction.innerText = text;
+        return instruction;
+    }
+
+    createField(field) {
+        const fieldArea = document.createElement('div');
+        fieldArea.style.display = 'flex';
+        fieldArea.style.alignItems = 'center';
+        fieldArea.style.gap = '8px';
+        fieldArea.style.marginTop = '5px';
+
+        const label = document.createElement('label');
+        label.innerText = `${field.label}:`;
+        fieldArea.appendChild(label);
+
+        const input = document.createElement('input');
+        input.type = field.type || 'text';
+        if (field.min !== undefined) input.min = field.min;
+        if (field.step !== undefined) input.step = field.step;
+        input.value = field.value;
+        input.style.width = '90px';
+        input.addEventListener('change', () => {
+            this.instructionProvider.setFieldValue(field.id, input.value);
+            this.render();
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.instructionProvider.setFieldValue(field.id, input.value);
+                if (field.actionId) {
+                    this.instructionProvider.runAction(field.actionId);
+                }
+                this.render();
+            }
+        });
+        fieldArea.appendChild(input);
+
+        if (field.actionId) {
+            const button = document.createElement('button');
+            button.innerText = field.actionLabel || 'Apply';
+            button.style.padding = '2px 8px';
+            button.style.cursor = 'pointer';
+            button.style.backgroundColor = '#444';
+            button.style.color = 'white';
+            button.style.border = '1px solid #777';
+            button.style.borderRadius = '3px';
+            button.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.instructionProvider.setFieldValue(field.id, input.value);
+                this.instructionProvider.runAction(field.actionId);
+                this.render();
+            };
+            fieldArea.appendChild(button);
+        }
+
+        return fieldArea;
+    }
+
+    createStatus(statusData) {
+        const status = document.createElement('div');
+        status.style.fontSize = '12px';
+        status.style.maxWidth = '420px';
+        status.style.textAlign = 'center';
+        status.style.color = statusData.tone === 'error' ? '#ff8a80' : '#b7f7c5';
+        status.innerText = statusData.text;
+        return status;
+    }
+
+    createActions(actions) {
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.gap = '8px';
+        controls.style.flexWrap = 'wrap';
+        controls.style.justifyContent = 'center';
+
+        for (const action of actions) {
+            const button = document.createElement('button');
+            button.innerText = action.label;
+            button.style.padding = '4px 10px';
+            button.style.cursor = 'pointer';
+            button.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.instructionProvider.runAction(action.id);
+                this.render();
+            };
+            controls.appendChild(button);
+        }
+
+        return controls;
+    }
+
+    createOutput(outputData) {
+        const output = document.createElement('textarea');
+        output.readOnly = outputData.readOnly !== false;
+        output.value = outputData.value;
+        output.placeholder = outputData.placeholder || '';
+        output.style.width = '420px';
+        output.style.height = '180px';
+        output.style.backgroundColor = '#1e1e1e';
+        output.style.color = '#f5f5f5';
+        output.style.border = '1px solid #555';
+        output.style.borderRadius = '4px';
+        output.style.padding = '8px';
+        return output;
+    }
+
     render() {
         this.container.innerHTML = '';
-        
-        let state = this.mouseControl.buttonState;
-        if (state === MouseState.NONE || state === MouseState.SELECT || state === MouseState.MOVE) {
+
+        const snapshot = this.instructionProvider.getSnapshot();
+        if (!snapshot.visible) {
             this.container.style.display = "none";
             return;
         }
@@ -266,323 +390,23 @@ export class CommandPanel {
         this.container.style.alignItems = "center";
         this.container.style.gap = "8px";
 
-        let title = document.createElement('div');
-        title.style.fontWeight = "bold";
-        title.style.fontSize = "14px";
-        title.style.textTransform = "uppercase";
-        title.style.letterSpacing = "1px";
-        
-        let instruction = document.createElement('div');
-        instruction.style.fontSize = "13px";
-        instruction.style.color = "#ccc";
+        this.container.appendChild(this.createInstructionTitle(snapshot.title));
+        this.container.appendChild(this.createInstructionText(snapshot.instruction));
 
-        if (state === MouseState.POINT) {
-            title.innerText = "Tool: Point";
-            instruction.innerText = "Click anywhere to place a point.";
-        } else if (state === MouseState.LINE) {
-            title.innerText = "Tool: Line";
-            instruction.innerText = "Click and drag to draw a line.";
-        } else if (state === MouseState.CIRCLE) {
-            title.innerText = "Tool: Circle (Center + Radius)";
-            instruction.innerText = "Click and drag to define center and radius.";
-        } else if (state === MouseState.ARC) {
-            title.innerText = "Tool: Arc (Center + Start + End)";
-            let step = this.mouseControl.arcCenterTool.step;
-            if (step === "placeCenter") instruction.innerText = "Step 1/3: Click to place Arc Center.";
-            else if (step === "placeStart") instruction.innerText = "Step 2/3: Click to place Start Point / Radius.";
-            else if (step === "placeEnd") instruction.innerText = "Step 3/3: Click to define End Angle.";
-        } else if (state === MouseState.ARC_3P) {
-            title.innerText = "Tool: 3-Point Arc";
-            let step = this.mouseControl.arc3PTool.step;
-            if (step === "placeStart") instruction.innerText = "Step 1/3: Click to place Start Point.";
-            else if (step === "placeEnd") instruction.innerText = "Step 2/3: Click to place End Point.";
-            else if (step === "placeRadius") instruction.innerText = "Step 3/3: Move mouse to define Arc Curvature and click.";
-        } else if (state === MouseState.CHAMFER_45) {
-            title.innerText = "Tool: Chamfer 45";
-            let lines = this.mouseControl.cornerChamfer45Tool.selectedVisualLines.length;
-            if (lines === 0) {
-                instruction.innerText = "Step 1/2: Select the first perpendicular line at the corner.";
-            } else {
-                instruction.innerText = "Step 2/2: Select the second perpendicular line. The new chamfer edge will be fixed to the size below.";
-            }
-
-            let chamferInputArea = document.createElement('div');
-            chamferInputArea.style.display = "flex";
-            chamferInputArea.style.alignItems = "center";
-            chamferInputArea.style.gap = "8px";
-
-            let chamferLabel = document.createElement('label');
-            chamferLabel.innerText = "Edge Size:";
-
-            let chamferInput = document.createElement('input');
-            chamferInput.type = "number";
-            chamferInput.min = "0.01";
-            chamferInput.step = "0.1";
-            chamferInput.value = this.mouseControl.commandChamferSize;
-            chamferInput.style.width = "90px";
-            chamferInput.addEventListener('change', () => {
-                let val = parseFloat(chamferInput.value);
-                if (!isNaN(val) && val > 0) {
-                    this.mouseControl.commandChamferSize = val;
-                }
-            });
-
-            chamferInputArea.appendChild(chamferLabel);
-            chamferInputArea.appendChild(chamferInput);
-            this.container.appendChild(chamferInputArea);
-        } else if (state === MouseState.TRIM) {
-            title.innerText = "Tool: Trim Line";
-            if (this.mouseControl.trimTool.step === 0) {
-                instruction.innerText = "Step 1/2: Select the boundary shape (line, circle, arc) to trim with.";
-            } else {
-                instruction.innerText = "Step 2/2: Click on the segment of a line you want to remove. It will be trimmed back to the boundary.";
-            }
-        } else if (state === MouseState.EXTEND) {
-            title.innerText = "Tool: Extend Line";
-            if (this.mouseControl.extendTool.step === 0) {
-                instruction.innerText = "Step 1/2: Select the boundary shape (line, circle, arc) to extend to.";
-            } else {
-                instruction.innerText = "Step 2/2: Click near the end of a line you want to extend. It will extend to the boundary.";
-            }
-        } else if (state === MouseState.FILLET_ARC) {
-            title.innerText = "Tool: Fillet Radius";
-            let lines = this.mouseControl.filletArcTool.selectedVisualLines.length;
-            if (lines === 0) {
-                instruction.innerText = "Step 1/3: Select the first line of the corner.";
-            } else if (lines === 1) {
-                instruction.innerText = "Step 2/3: Select the second line of the corner.";
-            } else {
-                instruction.innerText = "Step 3/3: Click inside the desired corner quadrant to place the fillet arc.";
-            }
-
-            let radiusInputArea = document.createElement('div');
-            radiusInputArea.style.display = "flex";
-            radiusInputArea.style.alignItems = "center";
-            radiusInputArea.style.gap = "8px";
-
-            let radiusLabel = document.createElement('label');
-            radiusLabel.innerText = "Radius:";
-
-            let radiusInput = document.createElement('input');
-            radiusInput.type = "number";
-            radiusInput.min = "0.01";
-            radiusInput.step = "0.1";
-            radiusInput.value = this.mouseControl.commandRadius;
-            radiusInput.style.width = "90px";
-            radiusInput.addEventListener('change', () => {
-                let val = parseFloat(radiusInput.value);
-                if (!isNaN(val) && val > 0) {
-                    this.mouseControl.commandRadius = val;
-                }
-            });
-
-            radiusInputArea.appendChild(radiusLabel);
-            radiusInputArea.appendChild(radiusInput);
-            this.container.appendChild(radiusInputArea);
-        } else if (state === MouseState.CIRCLE_3P) {
-            title.innerText = "Tool: 3-Point Circle";
-            let pts = this.mouseControl.circle3PTool.selectedPoints.length;
-            if (pts === 0) instruction.innerText = "Step 1/3: Select 1st point";
-            else if (pts === 1) instruction.innerText = "Step 2/3: Select 2nd point";
-            else if (pts === 2) instruction.innerText = "Step 3/3: Select 3rd point (final)";
-        } else if (state === MouseState.CAM_PATH) {
-            const camTool = this.mouseControl.camSelectionTool;
-            title.innerText = "Tool: CAM Path";
-
-            if (!camTool.startPointId) {
-                instruction.innerText = "Step 1: Click a start point.";
-            } else {
-                instruction.innerText = "Step 2: Click an ordered chain of points, lines, arcs, or circles to build the toolpath.";
-            }
-
-            const status = document.createElement('div');
-            status.style.fontSize = '12px';
-            status.style.maxWidth = '420px';
-            status.style.textAlign = 'center';
-            status.style.color = camTool.lastError ? '#ff8a80' : '#b7f7c5';
-            status.innerText = camTool.lastError
-                ? camTool.lastError
-                : `Start: ${camTool.startPointId || '-'} | Segments: ${camTool.sequenceIds.length}`;
-
-            const controls = document.createElement('div');
-            controls.style.display = 'flex';
-            controls.style.gap = '8px';
-            controls.style.flexWrap = 'wrap';
-            controls.style.justifyContent = 'center';
-
-            const makeButton = (label, onClick) => {
-                const button = document.createElement('button');
-                button.innerText = label;
-                button.style.padding = '4px 10px';
-                button.style.cursor = 'pointer';
-                button.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onClick();
-                    this.render();
-                };
-                return button;
-            };
-
-            controls.appendChild(makeButton('Export', () => {
-                camTool.exportSelection();
-            }));
-            controls.appendChild(makeButton('Undo Last', () => {
-                camTool.undoLastSelection();
-            }));
-            controls.appendChild(makeButton('Clear', () => {
-                camTool.clearSelection();
-            }));
-            controls.appendChild(makeButton('Copy', () => {
-                if (!camTool.lastGCode) {
-                    camTool.exportSelection();
-                }
-                if (camTool.lastGCode && navigator?.clipboard?.writeText) {
-                    navigator.clipboard.writeText(camTool.lastGCode);
-                }
-            }));
-
-            const output = document.createElement('textarea');
-            output.readOnly = true;
-            output.value = camTool.lastGCode;
-            output.placeholder = 'G-code output will appear here after you select a valid CAM path.';
-            output.style.width = '420px';
-            output.style.height = '180px';
-            output.style.backgroundColor = '#1e1e1e';
-            output.style.color = '#f5f5f5';
-            output.style.border = '1px solid #555';
-            output.style.borderRadius = '4px';
-            output.style.padding = '8px';
-
-            this.container.appendChild(title);
-            this.container.appendChild(instruction);
-            this.container.appendChild(status);
-            this.container.appendChild(controls);
-            this.container.appendChild(output);
-            return;
-        } else if (state === MouseState.MEASURE_LENGTH) {
-            title.innerText = "Tool: Measure Length";
-            let step = this.mouseControl.lengthMeasurementTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
-            else instruction.innerText = "Step 2/2: Select end point";
-        } else if (state === MouseState.MEASURE_HORIZONTAL) {
-            title.innerText = "Tool: Measure Horizontal";
-            let step = this.mouseControl.horizontalMeasurementTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
-            else instruction.innerText = "Step 2/2: Select end point";
-        } else if (state === MouseState.MEASURE_VERTICAL) {
-            title.innerText = "Tool: Measure Vertical";
-            let step = this.mouseControl.verticalMeasurementTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select start point";
-            else instruction.innerText = "Step 2/2: Select end point";
-        } else if (state === MouseState.MEASURE_ANGLE) {
-            title.innerText = "Tool: Measure Angle";
-            let step = this.mouseControl.angleMeasurementTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select first line";
-            else instruction.innerText = "Step 2/2: Select second line";
-        } else if (state === MouseState.MEASURE_LINECIRCLE) {
-            title.innerText = "Tool: Line-Circle Distance";
-            let step = this.mouseControl.lineCircleMeasurementTool.step;
-            if (step === 0) instruction.innerText = "Step 1/3: Select a Line or Circle structure";
-            else if (step === 1) instruction.innerText = "Step 2/3: Select the other structure type (Line or Circle)";
-            else if (step === 2) instruction.innerText = "Step 3/3: Move mouse to position offset and click to place";
-        } else if (state === MouseState.CONSTRAINT_HORIZONTAL) {
-            title.innerText = "Constraint: Horizontal Alignment";
-            let step = this.mouseControl.geometricHorizontalTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select first point";
-            else if (step === 1) instruction.innerText = "Step 2/2: Select second point";
-        } else if (state === MouseState.CONSTRAINT_VERTICAL) {
-            title.innerText = "Constraint: Vertical Alignment";
-            let step = this.mouseControl.geometricVerticalTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select first point";
-            else if (step === 1) instruction.innerText = "Step 2/2: Select second point";
-        } else if (state === MouseState.CONSTRAINT_TANGENT) {
-            title.innerText = "Constraint: Tangent";
-            let step = this.mouseControl.geometricTangentTool.step;
-            if (step === 0) instruction.innerText = "Step 1/2: Select a Line or Circle structure";
-            else if (step === 1) instruction.innerText = "Step 2/2: Select a touching Line or Circle structure";
-        } else if (state === MouseState.MEASURE_RADIUS) {
-            title.innerText = "Tool: Measure Radius";
-            instruction.innerText = "Click on a circle to measure its radius";
-        } else if (state === MouseState.PASTE) {
-            title.innerText = "Tool: Paste";
-            instruction.innerText = "Move mouse to position clipboard objects, click to paste.";
-        } else if (state === MouseState.CIRCLE_3T) {
-            title.innerText = "Tool: 3-Tangent Circle";
-            let lines = this.mouseControl.circle3TTool.selectedLines.length;
-            if (lines === 0) instruction.innerText = "Step 1/3: Select 1st intersecting object";
-            else if (lines === 1) instruction.innerText = "Step 2/3: Select 2nd intersecting object";
-            else if (lines === 2) instruction.innerText = "Step 3/3: Select 3rd intersecting object (final)";
-        } else if (state === MouseState.CIRCLE_2T1R) {
-            title.innerText = "Tool: Circle (2 Tangents, 1 Radius)";
-            let lines = this.mouseControl.circle2T1RTool.selectedLines.length;
-            if (lines === 0) {
-                instruction.innerText = "Step 1/3: Select 1st tangent object";
-            } else if (lines === 1) {
-                instruction.innerText = "Step 2/3: Select 2nd tangent object";
-            } else if (lines === 2) {
-                instruction.innerText = "Step 3/3: Click inside a quadrant to place circle.";
-                
-                let radiusInputArea = document.createElement('div');
-                radiusInputArea.style.display = "flex";
-                radiusInputArea.style.alignItems = "center";
-                radiusInputArea.style.gap = "8px";
-                radiusInputArea.style.marginTop = "5px";
-                radiusInputArea.style.backgroundColor = "rgba(0,0,0,0.5)";
-                radiusInputArea.style.padding = "5px 10px";
-                radiusInputArea.style.borderRadius = "4px";
-                
-                let rLabel = document.createElement('span');
-                rLabel.innerText = "Radius:";
-                rLabel.style.fontSize = "13px";
-                rLabel.style.fontWeight = "bold";
-                
-                let rInput = document.createElement('input');
-                rInput.type = "number";
-                rInput.value = this.mouseControl.commandRadius;
-                rInput.style.width = "70px";
-                rInput.style.padding = "2px 5px";
-                rInput.style.border = "1px solid #555";
-                rInput.style.borderRadius = "3px";
-                rInput.style.backgroundColor = "#333";
-                rInput.style.color = "white";
-                rInput.onchange = (e) => {
-                    let val = parseFloat(e.target.value);
-                    if (val > 0) this.mouseControl.commandRadius = val;
-                };
-                rInput.addEventListener('keydown', (e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        btnOk.click();
-                    }
-                });
-
-                let btnOk = document.createElement('button');
-                btnOk.innerText = "OK";
-                btnOk.style.padding = "2px 8px";
-                btnOk.style.cursor = "pointer";
-                btnOk.style.backgroundColor = "#444";
-                btnOk.style.color = "white";
-                btnOk.style.border = "1px solid #777";
-                btnOk.style.borderRadius = "3px";
-                btnOk.onclick = (e) => {
-                    e.stopPropagation(); // prevent canvas click
-                    // Fire 2T1R creation using the center of the canvas / dummy hint point
-                    this.mouseControl.forceComplete2T1R();
-                };
-                
-                radiusInputArea.appendChild(rLabel);
-                radiusInputArea.appendChild(rInput);
-                radiusInputArea.appendChild(btnOk);
-                
-                this.container.appendChild(title);
-                this.container.appendChild(instruction);
-                this.container.appendChild(radiusInputArea);
-                return; // Early return to append custom struct
-            }
+        if (snapshot.status) {
+            this.container.appendChild(this.createStatus(snapshot.status));
         }
 
-        this.container.appendChild(title);
-        this.container.appendChild(instruction);
+        for (const field of snapshot.fields) {
+            this.container.appendChild(this.createField(field));
+        }
+
+        if (snapshot.actions.length > 0) {
+            this.container.appendChild(this.createActions(snapshot.actions));
+        }
+
+        if (snapshot.output) {
+            this.container.appendChild(this.createOutput(snapshot.output));
+        }
     }
 }
