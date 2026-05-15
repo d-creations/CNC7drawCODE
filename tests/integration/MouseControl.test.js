@@ -106,4 +106,50 @@ describe("Phase 3: MouseControl, Selection & Snapping", () => {
         assert.equal(mouseControl.buttonState, MouseState.CIRCLE);
     });
 
+    it("should commit a dragged line endpoint to the snapped point on mouseUp", () => {
+        const targetPoint = new Point(new Vec4(100, 100, 0, 1));
+        drawBoard.drawObjects.push(targetPoint);
+
+        mouseControl.setState(MouseState.LINE);
+        mouseControl.mouseDown({ x: 20, y: 20, button: 0 });
+        mouseControl.mouseMove({ x: 103, y: 104, button: 0 });
+        mouseControl.mouseUp({ x: 103, y: 104, button: 0 });
+
+        const createdLine = drawBoard.drawObjects.find((obj) => obj instanceof DrawLine);
+
+        assert.ok(createdLine, "Expected mouse drag to create a line");
+        assert.equal(createdLine.endpoint, targetPoint, "Dragged line should reuse the snapped target point instance");
+        assert.equal(createdLine.endpoint.vec4.x, 100, "Line endpoint should land on the snapped point X");
+        assert.equal(createdLine.endpoint.vec4.y, 100, "Line endpoint should land on the snapped point Y");
+    });
+
+    it("should create point-tool geometry on mouseUp and ignore the follow-up click event", () => {
+        mouseControl.setState(MouseState.POINT);
+        const initialPointCount = drawBoard.drawObjects.filter((obj) => obj instanceof Point).length;
+
+        mouseControl.mouseDown({ x: 40, y: 50, button: 0 });
+        mouseControl.mouseUp({ x: 40, y: 50, button: 0 });
+
+        const pointCountAfterMouseUp = drawBoard.drawObjects.filter((obj) => obj instanceof Point).length;
+        assert.equal(pointCountAfterMouseUp, initialPointCount + 1, "Point tool should commit on mouseUp without needing mouseClicked");
+
+        mouseControl.mouseClicked({ x: 40, y: 50, button: 0 });
+
+        const pointCountAfterClick = drawBoard.drawObjects.filter((obj) => obj instanceof Point).length;
+        assert.equal(pointCountAfterClick, initialPointCount + 1, "Follow-up browser click should be ignored to avoid duplicate point creation");
+    });
+
+    it("should advance staged click tools on mouseUp without double-advancing on click", () => {
+        mouseControl.setState(MouseState.CIRCLE_3P);
+
+        mouseControl.mouseDown({ x: 10, y: 10, button: 0 });
+        mouseControl.mouseUp({ x: 10, y: 10, button: 0 });
+
+        assert.equal(mouseControl.circle3PTool.selectedPoints.length, 1, "First mouseUp should advance staged tool by one step");
+
+        mouseControl.mouseClicked({ x: 10, y: 10, button: 0 });
+
+        assert.equal(mouseControl.circle3PTool.selectedPoints.length, 1, "Follow-up browser click should not advance the staged tool twice");
+    });
+
 });

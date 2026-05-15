@@ -88,6 +88,7 @@ export class MouseControl{
         this.tempLines = [];
         this.commandRadius = 20; // Default radius input
         this.commandChamferSize = 10;
+        this.ignoreNextClick = false;
         this.onStateChange = null; 
     }
 
@@ -308,12 +309,34 @@ export class MouseControl{
     }
 
     mouseClicked(position) {
+        if (this.ignoreNextClick) {
+            this.ignoreNextClick = false;
+            return;
+        }
+
+        this.processClickAction(position, true);
+    }
+
+    isClickRelease(position) {
+        if (!this.downPosition || position.button === 2) {
+            return false;
+        }
+
+        let dragDist = Math.hypot(position.x - this.downPosition.x, position.y - this.downPosition.y);
+        return dragDist < 5;
+    }
+
+    processClickAction(position, saveState = false) {
+        let handled = false;
+
         if(this.buttonState == MouseState.POINT){
             this.pointTool.onCanvasClick(position.x, position.y);
+            handled = true;
         }
         else if (this.buttonState == MouseState.CIRCLE_3P) {
             this.circle3PTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.CIRCLE_3T) {
             let allowedTargets = ["DrawLine", "DrawCircle"];
@@ -321,6 +344,7 @@ export class MouseControl{
             if (snappedPt.exist && snappedPt.obj) {
                 this.circle3TTool.onShapeSelected(snappedPt.obj);
                 if (this.onStateChange) this.onStateChange();
+                handled = true;
             }
         }
         else if (this.buttonState == MouseState.CIRCLE_2T1R) {
@@ -330,11 +354,13 @@ export class MouseControl{
                 if (snappedPt.exist && snappedPt.obj) {
                     this.circle2T1RTool.onShapeSelected(snappedPt.obj);
                     if (this.onStateChange) this.onStateChange();
+                    handled = true;
                 }
             } else if (this.circle2T1RTool.step === "placeRadiusHint") {
                 this.circle2T1RTool.tempRadius = this.commandRadius; // Inject manual radius
                 this.circle2T1RTool.onCanvasClick(position.x, position.y);
                 if (this.onStateChange) this.onStateChange();
+                handled = true;
             }
         }
         else if (this.buttonState == MouseState.CHAMFER_45) {
@@ -342,6 +368,7 @@ export class MouseControl{
             if (snappedPt.exist && snappedPt.obj) {
                 this.cornerChamfer45Tool.onShapeSelected(snappedPt.obj, this.commandChamferSize);
                 if (this.onStateChange) this.onStateChange();
+                handled = true;
             }
         }
         else if (this.buttonState == MouseState.FILLET_ARC) {
@@ -350,79 +377,98 @@ export class MouseControl{
                 if (snappedPt.exist && snappedPt.obj) {
                     this.filletArcTool.onShapeSelected(snappedPt.obj);
                     if (this.onStateChange) this.onStateChange();
+                    handled = true;
                 }
             } else if (this.filletArcTool.step === "placeRadiusHint") {
                 this.filletArcTool.tempRadius = this.commandRadius;
                 this.filletArcTool.onCanvasClick(position.x, position.y);
                 if (this.onStateChange) this.onStateChange();
+                handled = true;
             }
         }
         else if (this.buttonState === MouseState.TRIM) {
             this.trimTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState === MouseState.EXTEND) {
             this.extendTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState === MouseState.CAM_PATH) {
             this.camSelectionTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         
         if(this.buttonState == MouseState.SELECT){
-            let dragDist = Math.hypot(position.x - this.downPosition.x, position.y - this.downPosition.y);
-            if (dragDist < 5) {
+            if (this.isClickRelease(position)) {
                 this.drawBoard.selectObject(position.x,position.y)
+                handled = true;
             }
         }
         else if (this.buttonState == MouseState.MEASURE_LENGTH) {
             this.lengthMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.MEASURE_HORIZONTAL) {
             this.horizontalMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.MEASURE_VERTICAL) {
             this.verticalMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.CONSTRAINT_HORIZONTAL) {
             this.geometricHorizontalTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.CONSTRAINT_VERTICAL) {
             this.geometricVerticalTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.CONSTRAINT_TANGENT) {
             this.geometricTangentTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.MEASURE_ANGLE) {
             this.angleMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.MEASURE_RADIUS) {
             this.radiusMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.MEASURE_LINECIRCLE) {
             this.lineCircleMeasurementTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.ARC) {
             this.arcCenterTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
         else if (this.buttonState == MouseState.ARC_3P) {
             this.arc3PTool.onCanvasClick(position.x, position.y);
             if (this.onStateChange) this.onStateChange();
+            handled = true;
         }
 
-        // Auto-save memory on click actions
-        this.drawBoard.saveState();
+        if (handled && saveState) {
+            this.drawBoard.saveState();
+        }
+
+        return handled;
     }
 
     forceComplete2T1R() {
@@ -467,14 +513,22 @@ export class MouseControl{
             this.drawBoard.clipboardManager.insertClipboard(worldPos.x, worldPos.y);
             this.setState(MouseState.SELECT); // Reset back to select after dropping
         } else if(this.buttonState == MouseState.LINE){
-            this.lineTool.onCanvasClick(this.downPosition.x, this.downPosition.y); // start
-            this.lineTool.onCanvasClick(position.x, position.y); // end
+            let snappedStart = this.drawBoard.selectStartObject(this.downPosition.x, this.downPosition.y, ["Point"]);
+            let snappedEnd = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
+
+            this.lineTool.onCanvasClick(snappedStart.x, snappedStart.y); // start
+            this.lineTool.onCanvasClick(snappedEnd.x, snappedEnd.y); // end
         }
         if(this.buttonState == MouseState.CIRCLE){
             this.circleTool.onCanvasClick(this.downPosition.x, this.downPosition.y); // center
             this.circleTool.onCanvasClick(position.x, position.y); // edge
             this.drawBoard.clearTempObjects();
             this.drawBoard.draw();
+        } else if (this.isClickRelease(position)) {
+            let handled = this.processClickAction(position, false);
+            if (handled) {
+                this.ignoreNextClick = true;
+            }
         }
         
         // Auto-save on drag release
