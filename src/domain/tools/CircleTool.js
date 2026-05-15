@@ -2,6 +2,7 @@ import { BaseTool } from "./BaseTool.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { isObjectType } from '../core/ObjectType.js';
 
 /**
  * Tool for creating a standard Circle from center point and radius (by dragging).
@@ -19,7 +20,7 @@ export class CircleTool extends BaseTool {
         let snapped = this.drawBoard.selectStartObject(x, y, ["Point"]);
         let ptId, pObj;
 
-        if (snapped.exist && snapped.obj && snapped.obj.constructor.name === "Point") {
+        if (snapped.exist && snapped.obj && isObjectType(snapped.obj, "Point")) {
             pObj = snapped.obj;
             ptId = pObj.constraintId;
         } else {

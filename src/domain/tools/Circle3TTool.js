@@ -4,6 +4,7 @@ import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
 import { GeometricTangentShape } from "../shapes/GeometricTangentShape.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { getObjectType } from '../core/ObjectType.js';
 
 /**
  * Tool for creating a fully constrained Circle from 3 Lines (Tangents).
@@ -21,7 +22,7 @@ export class Circle3TTool extends BaseTool {
      * Called when user clicks an existing shape on the Canvas.
      */
     onShapeSelected(shapeClicked) {
-        if (!["DrawLine", "DrawCircle"].includes(shapeClicked.constructor.name)) return;
+        if (!["DrawLine", "DrawCircle"].includes(getObjectType(shapeClicked))) return;
 
         // We assume your canvas hit-selection gives you the DrawLine object.
         // We'll need a way to link `DrawLine` UI shapes to their JSON Constraint Id.

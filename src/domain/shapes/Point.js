@@ -2,6 +2,7 @@ import { BaseShape } from "./BaseShape.js";
 
 export class Point extends BaseShape {
     vec4;
+    type = "Point";
 
     constructor(vec4) {
         super();

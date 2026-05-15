@@ -8,6 +8,7 @@ export class DrawArc extends BaseShape {
     endAngle;
     startPoint;
     endpoint;
+    type = "DrawArc";
 
     constructor(centerPoint, radius, startAngle, endAngle, startPoint = null, endpoint = null) {
         super();

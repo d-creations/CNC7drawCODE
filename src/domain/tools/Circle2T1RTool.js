@@ -4,6 +4,7 @@ import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
 import { GeometricTangentShape } from "../shapes/GeometricTangentShape.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { getObjectType } from '../core/ObjectType.js';
 
 /**
  * Tool for creating a Circle constrained by 2 Lines and a fixed Radius.
@@ -24,7 +25,7 @@ export class Circle2T1RTool extends BaseTool {
      */
     onShapeSelected(shapeClicked) {
         if (this.step !== "selectLines") return;
-        if (!["DrawLine", "DrawCircle"].includes(shapeClicked.constructor.name)) return;
+        if (!["DrawLine", "DrawCircle"].includes(getObjectType(shapeClicked))) return;
 
         let lineId = shapeClicked.constraintId || "temp_line_id"; 
         

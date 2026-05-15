@@ -1,4 +1,5 @@
 import { BaseTool } from './BaseTool.js';
+import { isObjectType } from '../core/ObjectType.js';
 
 const CAM_ALLOWED_TYPES = ['Point', 'DrawLine', 'DrawArc', 'DrawCircle'];
 
@@ -35,7 +36,7 @@ export class CAMSelectionTool extends BaseTool {
         }
 
         if (!this.startPointId) {
-            if (obj.constructor.name !== 'Point') {
+            if (!isObjectType(obj, 'Point')) {
                 this.lastError = 'The CAM path must begin on a point.';
                 this.drawBoard.draw();
                 return false;

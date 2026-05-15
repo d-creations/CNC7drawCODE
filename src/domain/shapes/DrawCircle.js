@@ -4,6 +4,7 @@ import { Point } from "./Point.js";
 export class DrawCircle extends BaseShape {
     centerPoint;
     radius;
+    type = "DrawCircle";
 
     constructor(centerPoint, radius) {
         super();

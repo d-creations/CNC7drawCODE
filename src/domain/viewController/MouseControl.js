@@ -127,6 +127,19 @@ export class MouseControl{
 
     mouseDown(position){
         this.downPosition = position;
+        
+        if (this.buttonState === MouseState.LINE) {
+            let snappedStart = this.drawBoard.selectStartObject(position.x, position.y, ["Point"]);
+            if (snappedStart.exist) {
+                this.downPosition = {
+                    ...position,
+                    x: snappedStart.x,
+                    y: snappedStart.y
+                };
+            }
+        }
+
+        
         this.movePos = {
             exist : false,
             dist : 9999,

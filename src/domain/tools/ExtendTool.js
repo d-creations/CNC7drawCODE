@@ -1,6 +1,7 @@
 import { BaseTool } from "./BaseTool.js";
 import { Geometry } from "../math/Geometry.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { isObjectType } from '../core/ObjectType.js';
 
 export class ExtendTool extends BaseTool {
     constructor(drawBoard, constraintSystem) {
@@ -35,7 +36,7 @@ export class ExtendTool extends BaseTool {
 
         if (this.step === 1) {
             let targetLine = snapped.obj;
-            if (targetLine.constructor.name !== "DrawLine" || targetLine === this.boundaryShape) return;
+            if (!isObjectType(targetLine, "DrawLine") || targetLine === this.boundaryShape) return;
 
             let pClick = this.drawBoard.camera.getWorldVec(x, y);
 

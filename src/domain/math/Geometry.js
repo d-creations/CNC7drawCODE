@@ -134,19 +134,20 @@ export class Geometry {
 
     /** Helper: Extracts universal mathematical primitives from UI shapes */
     static extractPrimitive(obj) {
-        if (obj.constructor.name === "DrawLine") {
+        let objType = obj?.type || obj?.constructor?.name;
+        if (objType === "DrawLine") {
             return {
                 type: "line",
                 x1: obj.startPoint.vec4.x, y1: obj.startPoint.vec4.y,
                 x2: obj.endpoint.vec4.x, y2: obj.endpoint.vec4.y
             };
-        } else if (obj.constructor.name === "DrawCircle") {
+        } else if (objType === "DrawCircle") {
             return { type: "circle", cx: obj.centerPoint.vec4.x, cy: obj.centerPoint.vec4.y, r: obj.radius };
-        } else if (obj.constructor.name === "DrawCircle3P" || obj.constructor.name === "DrawCircle3T") {
+        } else if (objType === "DrawCircle3P" || objType === "DrawCircle3T") {
             // These objects use dynamic calculation that they internally store/return
-            let circ = obj.constructor.name === "DrawCircle3P" ? obj.getCircumcenter() : obj.getIncircle();
+            let circ = objType === "DrawCircle3P" ? obj.getCircumcenter() : obj.getIncircle();
             return { type: "circle", cx: circ.x, cy: circ.y, r: circ.r };
-        } else if (obj.constructor.name === "DrawCircle2T1R") {
+        } else if (objType === "DrawCircle2T1R") {
             let circ = obj.getIncircle();
             return { type: "circle", cx: circ.x, cy: circ.y, r: circ.r };
         }

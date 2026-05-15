@@ -1,5 +1,6 @@
 import { BaseTool } from "./BaseTool.js";
 import { LineCircleMeasurementShape } from "../shapes/LineCircleMeasurementShape.js";
+import { getObjectType, isObjectType } from '../core/ObjectType.js';
 
 export class LineCircleMeasurementTool extends BaseTool {
     constructor(drawBoard, constraintSystem) {
@@ -23,8 +24,8 @@ export class LineCircleMeasurementTool extends BaseTool {
             let s2 = snapped.obj;
             if (s2 === this.selectedShapes[0]) return; // Picked same shape
 
-            let t1 = this.selectedShapes[0].constructor.name;
-            let t2 = s2.constructor.name;
+            let t1 = getObjectType(this.selectedShapes[0]);
+            let t2 = getObjectType(s2);
 
             let lineShape = t1 === "DrawLine" ? this.selectedShapes[0] : (t2 === "DrawLine" ? s2 : null);
             let circShape = t1 === "DrawCircle" ? this.selectedShapes[0] : (t2 === "DrawCircle" ? s2 : null);
@@ -45,8 +46,8 @@ export class LineCircleMeasurementTool extends BaseTool {
             this.drawBoard.draw();
         }
         else if (this.step === 2) {
-            let lineShape = this.selectedShapes.find(s => s.constructor.name === "DrawLine");
-            let circShape = this.selectedShapes.find(s => s.constructor.name === "DrawCircle");
+            let lineShape = this.selectedShapes.find((s) => isObjectType(s, "DrawLine"));
+            let circShape = this.selectedShapes.find((s) => isObjectType(s, "DrawCircle"));
 
             let p1 = lineShape.p1;
             let p2 = lineShape.p2;

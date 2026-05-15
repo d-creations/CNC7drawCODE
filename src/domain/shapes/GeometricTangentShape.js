@@ -1,4 +1,5 @@
 import { BaseShape } from "./BaseShape.js";
+import { getObjectType } from '../core/ObjectType.js';
 
 export class GeometricTangentShape extends BaseShape {
     constructor(drawBoard, shape1, shape2) {
@@ -14,8 +15,8 @@ export class GeometricTangentShape extends BaseShape {
     getRenderData() {
         if (!this.s1 || !this.s2) return [];
 
-        let type1 = this.s1.constructor.name;
-        let type2 = this.s2.constructor.name;
+        let type1 = getObjectType(this.s1);
+        let type2 = getObjectType(this.s2);
         
         let lineShape = type1 === "DrawLine" ? this.s1 : (type2 === "DrawLine" ? this.s2 : null);
         let circShape = ["DrawCircle", "DrawArc"].includes(type1) ? this.s1 : (["DrawCircle", "DrawArc"].includes(type2) ? this.s2 : null);

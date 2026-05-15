@@ -1,5 +1,6 @@
 import { BaseTool } from "./BaseTool.js";
 import { GeometricTangentShape } from "../shapes/GeometricTangentShape.js";
+import { getObjectType } from '../core/ObjectType.js';
 
 export class GeometricTangentTool extends BaseTool {
     constructor(drawBoard) {
@@ -28,8 +29,8 @@ export class GeometricTangentTool extends BaseTool {
 
             // Tangent generally works between one line and one circular shape, or between two circular shapes.
             // We ignore Line & Line since that's parallelism, not tangency.
-            const type1 = this.s1.constructor.name;
-            const type2 = s2.constructor.name;
+            const type1 = getObjectType(this.s1);
+            const type2 = getObjectType(s2);
 
             if (type1 === "DrawLine" && type2 === "DrawLine") {
                 console.warn("Tangent cannot be applied between two lines.");

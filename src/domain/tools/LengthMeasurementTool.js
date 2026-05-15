@@ -1,5 +1,6 @@
 import { BaseTool } from "./BaseTool.js";
 import { LengthMeasurementShape } from "../shapes/LengthMeasurementShape.js";
+import { isObjectType } from '../core/ObjectType.js';
 
 export class LengthMeasurementTool extends BaseTool {
     constructor(drawBoard) {
@@ -16,11 +17,11 @@ export class LengthMeasurementTool extends BaseTool {
             return { type: "none" };
         }
 
-        if (snapped.obj.constructor.name === "Point" && snapped.obj.vec4) {
+        if (isObjectType(snapped.obj, "Point") && snapped.obj.vec4) {
             return { type: "point", point: snapped.obj };
         }
 
-        if (["DrawLine", "DrawArc"].includes(snapped.obj.constructor.name)) {
+        if (isObjectType(snapped.obj, "DrawLine", "DrawArc")) {
             const startPoint = snapped.obj.startPoint;
             const endPoint = snapped.obj.endpoint;
             if (startPoint?.constraintId && endPoint?.constraintId) {

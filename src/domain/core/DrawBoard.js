@@ -7,6 +7,7 @@ import { LocalSketchStorage } from '../storage/LocalSketchStorage.js'
 import { HistoryManager } from '../storage/HistoryManager.js'
 import { Point } from '../shapes/Point.js'
 import { DrawLine } from '../shapes/DrawLine.js'
+import { getObjectType, isObjectType } from './ObjectType.js';
 import { DrawCircle } from '../shapes/DrawCircle.js'
 import { DrawArc } from '../shapes/DrawArc.js'
 import { LengthMeasurementShape } from '../shapes/LengthMeasurementShape.js'
@@ -107,13 +108,14 @@ export class DrawBoard{
             }
 
             for(let obj of objectsToCheck){
-                if (!allowedTypes.includes(obj.constructor.name)) continue; // snap filter
+                let objType = getObjectType(obj);
+                if (!objType || !allowedTypes.includes(objType)) continue; // snap filter
                 let dist = HitTester.hitTest(obj.getRenderData(), _x, _y, this.camera)
                 if(dist < this.selectDistLampda){
                     if(selectedobj.dist > dist){
                         selectedobj.obj = obj
                         // If it's a point, we snap exactly to its vec4, else just use the closest mouse point for lines
-                        if (obj.constructor.name === "Point") {
+                        if (isObjectType(obj, "Point")) {
                             let camPos = obj.vec4 ? obj.vec4.mulMatrix(this.camera.getCalcMatrix()) : {x:0, y:0};
                             selectedobj.x = camPos.x
                             selectedobj.y = camPos.y
@@ -510,12 +512,12 @@ export class DrawBoard{
                 if (obj.constraintId) {
                     let geoData = this.constraintSystem.geometries.get(obj.constraintId)?.data;
                     if (geoData) {
-                        if (obj.constructor.name === "Point") {
+                        if (isObjectType(obj, "Point")) {
                             if (!obj.vec4) obj.vec4 = new Vec4(0,0,0,1);
                             obj.vec4.x = geoData.x;
                             obj.vec4.y = geoData.y;
                         } 
-                        else if (obj.constructor.name === "DrawCircle") {
+                        else if (isObjectType(obj, "DrawCircle")) {
                             let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
                             if (centerData && obj.centerPoint && obj.centerPoint.vec4) {
                                 obj.centerPoint.vec4.x = centerData.x;
@@ -523,7 +525,7 @@ export class DrawBoard{
                             }
                             obj.radius = geoData.r;
                         }
-                        else if (obj.constructor.name === "DrawArc") {
+                        else if (isObjectType(obj, "DrawArc")) {
                             let centerData = this.constraintSystem.geometries.get(geoData.center)?.data;
                             if (centerData && obj.centerPoint && obj.centerPoint.vec4) {
                                 obj.centerPoint.vec4.x = centerData.x;
@@ -550,7 +552,7 @@ export class DrawBoard{
                                 obj.endAngle = geoData.endAngle;
                             }
                         }
-                        else if (obj.constructor.name === "DrawLine") {
+                        else if (isObjectType(obj, "DrawLine")) {
                             let startData = this.constraintSystem.geometries.get(geoData.start)?.data;
                             let endData = this.constraintSystem.geometries.get(geoData.end)?.data;
                             if (startData) {
@@ -677,18 +679,18 @@ export class DrawBoard{
     }
     _syncPointAttachmentState() {
         for (let obj of this.drawObjects) {
-            if (obj.constructor.name === "Point") {
+            if (isObjectType(obj, "Point")) {
                 obj.isAttachedToShape = false;
             }
         }
 
         for (let obj of this.drawObjects) {
-            if (obj.constructor.name === "DrawLine") {
+            if (isObjectType(obj, "DrawLine")) {
                 if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
                 if (obj.endpoint) obj.endpoint.isAttachedToShape = true;
-            } else if (obj.constructor.name === "DrawCircle") {
+            } else if (isObjectType(obj, "DrawCircle")) {
                 if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
-            } else if (obj.constructor.name === "DrawArc") {
+            } else if (isObjectType(obj, "DrawArc")) {
                 if (obj.centerPoint) obj.centerPoint.isAttachedToShape = true;
                 if (obj.startPoint) obj.startPoint.isAttachedToShape = true;
                 if (obj.endpoint) obj.endpoint.isAttachedToShape = true;

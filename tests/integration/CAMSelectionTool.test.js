@@ -91,4 +91,16 @@ describe('CAM selection tool', () => {
         assert.equal(drawBoard.selectedObjects.length, 3);
         assert.equal(camTool.lastError, '');
     });
+
+    it('accepts a start point by explicit type even when constructor names are mangled', () => {
+        const startPoint = new Point(new Vec4(0, 0, 0, 1));
+        startPoint.constraintId = 'p1';
+        startPoint.constructor = { name: 'n' };
+
+        const accepted = camTool.onObjectSelected(startPoint);
+
+        assert.equal(accepted, true, 'CAM path start should accept explicit Point type even if constructor.name changes');
+        assert.equal(camTool.startPointId, 'p1');
+        assert.equal(camTool.lastError, '');
+    });
 });

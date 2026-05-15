@@ -1,5 +1,6 @@
 import { BaseTool } from "./BaseTool.js";
 import { AngleMeasurementShape } from "../shapes/AngleMeasurementShape.js";
+import { isObjectType } from '../core/ObjectType.js';
 
 export class AngleMeasurementTool extends BaseTool {
     constructor(drawBoard) {
@@ -12,7 +13,7 @@ export class AngleMeasurementTool extends BaseTool {
         // Try to pick a line
         const hit = this.drawBoard.selectStartObject(x, y, ["DrawLine"]);
         
-        if (hit.exist && hit.obj && hit.obj.constructor.name === "DrawLine") {
+        if (hit.exist && hit.obj && isObjectType(hit.obj, "DrawLine")) {
             if (this.step === 0) {
                 this.line1 = hit.obj;
                 this.step = 1;

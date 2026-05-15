@@ -3,6 +3,7 @@ import { Geometry } from "../math/Geometry.js";
 import { Point } from "../shapes/Point.js";
 import { DrawCircle } from "../shapes/DrawCircle.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { isObjectType } from '../core/ObjectType.js';
 
 /**
  * Tool for creating a Circle from 3 Points.
@@ -25,7 +26,7 @@ export class Circle3PTool extends BaseTool {
         let snapped = this.drawBoard.selectStartObject(x, y, ["Point"]);
         let ptId;
 
-        if (snapped.exist && snapped.obj && snapped.obj.constructor.name === "Point") {
+        if (snapped.exist && snapped.obj && isObjectType(snapped.obj, "Point")) {
             ptId = snapped.obj.constraintId;
         } else {
             // Convert screen pixel coordinates into world coordinate offsets!

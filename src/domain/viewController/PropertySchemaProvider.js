@@ -1,4 +1,5 @@
 import { AppConfig } from '../core/Config.js';
+import { getObjectType } from '../core/ObjectType.js';
 
 export const PropertySchemaActionIds = {
     OK: 'editor.ok',
@@ -182,7 +183,7 @@ export class PropertySchemaProvider {
         this.currentSchema = {
             visible: true,
             mode: 'single',
-            title: `${activeObj.constructor.name} Properties`,
+            title: `${getObjectType(activeObj) || 'Object'} Properties`,
             sections,
             actions: [
                 { id: PropertySchemaActionIds.OK, label: 'OK', role: 'primary' },

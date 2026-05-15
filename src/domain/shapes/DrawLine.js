@@ -4,6 +4,7 @@ import { Point } from "./Point.js";
 export class DrawLine extends BaseShape {
     startPoint;
     endpoint;
+    type = "DrawLine";
 
     constructor(startPoint, endpoint) {
         super();

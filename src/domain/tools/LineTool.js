@@ -2,6 +2,7 @@ import { BaseTool } from "./BaseTool.js";
 import { Point } from "../shapes/Point.js";
 import { DrawLine } from "../shapes/DrawLine.js";
 import { Vec4 } from '../viewController/Camera.js';
+import { isObjectType } from '../core/ObjectType.js';
 
 /**
  * Tool for creating standard constrained Lines.
@@ -20,7 +21,7 @@ export class LineTool extends BaseTool {
         let ptId, pObj;
 
 
-        if (snapped.exist && snapped.obj && snapped.obj.constructor.name === "Point") {
+        if (snapped.exist && snapped.obj && isObjectType(snapped.obj, "Point")) {
             pObj = snapped.obj;
             ptId = pObj.constraintId;
         } else {

@@ -5,6 +5,8 @@ import { DrawBoard } from '../../src/domain/core/DrawBoard.js';
 import { ConstraintSystem } from "../../src/domain/constraints/ConstraintSystem.js";
 import { LineTool } from "../../src/domain/tools/LineTool.js";
 import { Camera } from '../../src/domain/viewController/Camera.js';
+import { Point } from '../../src/domain/shapes/Point.js';
+import { Vec4 } from '../../src/domain/viewController/Camera.js';
 
 // Basic global DOM environment shim (if DrawBoard/Camera access window)
 global.window = {};
@@ -76,5 +78,25 @@ describe("Line Drawing Integration", () => {
         assert.equal(mockCtx.moveTo.mock.calls.length >= 1, true, "moveTo should have been called");
         assert.equal(mockCtx.lineTo.mock.calls.length >= 1, true, "lineTo should have been called");
         assert.equal(mockCtx.stroke.mock.calls.length >= 1, true, "stroke should have been called");
+    });
+
+    it("should reuse a snapped point even when constructor names are mangled", () => {
+        const pointId = constraintSystem.addGeometry({
+            type: 'Point',
+            data: { x: 100, y: 100 },
+            fixed: false
+        });
+        const point = new Point(new Vec4(100, 100, 0, 1));
+        point.constraintId = pointId;
+        point.constructor = { name: 't' };
+        drawBoard.drawObjects.push(point);
+
+        lineTool.onCanvasClick(20, 20);
+        lineTool.onCanvasClick(103, 104);
+
+        const createdLine = drawBoard.drawObjects.find((obj) => obj.type === 'DrawLine');
+
+        assert.ok(createdLine, 'Line should still be created when the snapped point constructor name is mangled');
+        assert.equal(createdLine.endpoint, point, 'Line tool should reuse the explicit Point type rather than constructor.name');
     });
 });
