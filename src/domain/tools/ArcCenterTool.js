@@ -117,8 +117,8 @@ export class ArcCenterTool extends BaseTool {
             let r = Math.sqrt(dx*dx + dy*dy);
             
             this.drawBoard.clearTempObjects();
-            let cPoint = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(this.pCenter.x, this.pCenter.y, 0, 1));
-            let tempCircle = new DrawArc(this.drawBoard.context, this.drawBoard.camera, cPoint, r, 0, Math.PI * 2);
+            let cPoint = new Point(new Vec4(this.pCenter.x, this.pCenter.y, 0, 1));
+            let tempCircle = new DrawArc(cPoint, r, 0, Math.PI * 2);
             tempCircle.changeColor("gray");
             this.drawBoard.drawTempObjects.push(tempCircle);
             this.drawBoard.draw();
@@ -136,8 +136,8 @@ export class ArcCenterTool extends BaseTool {
             if (endAngle < 0) endAngle += 2 * Math.PI;
 
             this.drawBoard.clearTempObjects();
-            let cPoint = new Point(this.drawBoard.context, this.drawBoard.camera, new Vec4(this.pCenter.x, this.pCenter.y, 0, 1));
-            let previewArc = new DrawArc(this.drawBoard.context, this.drawBoard.camera, cPoint, r, startAngle, endAngle);
+            let cPoint = new Point(new Vec4(this.pCenter.x, this.pCenter.y, 0, 1));
+            let previewArc = new DrawArc(cPoint, r, startAngle, endAngle);
             previewArc.changeColor("green");
             this.drawBoard.drawTempObjects.push(previewArc);
             this.drawBoard.draw();
